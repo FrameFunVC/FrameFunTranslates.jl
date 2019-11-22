@@ -1,0 +1,29 @@
+name = "FrameFunTranslates"
+uuid = "d30035f4-e938-55a2-bf66-16ee038a887d"
+authors = ["vincentcp"]
+version = "0.1.0"
+
+[deps]
+BasisFunctions = "4343a256-5453-507d-8aad-01a9d7189916"
+CompactTranslatesDict = "455b6770-8cd4-11e8-0457-dd6f5558b097"
+DomainSets = "5b8099bc-c8ec-5219-889f-1d9e522a28bf"
+FrameFun = "bbafa164-4497-5d18-87cf-33e911f89480"
+GridArrays = "356ae075-8bc9-5ef9-a342-46c9ba26438c"
+InfiniteVectors = "a3035606-0d97-52a5-9f37-19f5f67b7424"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
+SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
+SuiteSparse = "4607b0f0-06f3-5cda-b6b1-a6196a1729e9"
+
+[compat]
+CompactTranslatesDict = "≥ 0.0.7"
+FrameFun = "≥ 0.0.5"
+julia = "1.1"
+
+[extras]
+Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test", "Statistics"]
