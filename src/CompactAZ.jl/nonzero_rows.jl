@@ -1,10 +1,10 @@
 
-function nonzero_rows(m::AbstractMatrix, s=size(m,1);nonzero_tol=0)
+function nonzero_rows(m::AbstractMatrix, s=size(m,1);nz_tol=0)
     mask = falses(s)
-    if nonzero_tol == 0
+    if nz_tol == 0
         nonzero_rows!(mask, m)
     else
-        nonzero_rows!(mask, m, nonzero_tol)
+        nonzero_rows!(mask, m, nz_tol)
     end
     mask
 end

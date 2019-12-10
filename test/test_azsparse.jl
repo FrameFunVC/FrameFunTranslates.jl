@@ -1,6 +1,5 @@
 using StaticArrays, FrameFunTranslates, FrameFun, LinearAlgebra, SparseArrays, BasisFunctions, Test
 
-
 D = .4*disk() + SVector(.5,.5)
     Pbasis = NdCDBSplinePlatform((1,1))
     P1 = ExtensionFramePlatform(Pbasis, D)
@@ -84,8 +83,7 @@ D = .4*disk() + SVector(.5,.5)
 #     end
 # end
 
-using FrameFunTranslates.SparseAZ: sparseRAE
-using FrameFunTranslates.CompactAZ.ReducedAZ.ReductionSolvers: nonzero_rows, nonzero_cols
+using FrameFunTranslates.CompactAZ.CompactFrameFunExtension: nonzero_rows, nonzero_coefficients, sparseRAE
 using SparseArrays, Test
 @testset "SparseAZ: sparseRAE" begin
     for (P,N,m) in zip((P1,P2,P3,P4), (N1,N2,N3,N4), (m1,m2,m3,m4))
@@ -97,13 +95,14 @@ using SparseArrays, Test
 
         s = Matrix(I-AZ_Zt(P,N)*AZ_A(P,N))
         col_indices = findall(reshape(nonzero_rows(s),size(dict1)))
-        RAE =sparseRAE(dict1,g,col_indices)
+        RAE =sparseRAE(P,N,col_indices;solverstyle=SparseAZStyle(),L=m.*N)
         RAEref = sparse((E = IndexExtensionOperator(dict1, col_indices);tmp=AZ_A(P,N;L=m.*N)*E;tmp=Matrix(tmp);tmp[abs.(tmp).<1e-14].=0;tmp))
         @test RAE≈RAEref
     end
 end
 
-using FrameFunTranslates.SparseAZ: sparseAAZAmatrix, sparseidentity, overlappingindices
+using FrameFunTranslates.CompactAZ.CompactFrameFunExtension: sparseidentity, overlappingindices, sparseRAE, _sparseRAE
+using CompactTranslatesDict.CompactInfiniteVectors
 @testset "SparseAZ: sparseAAZAmatrix" begin
     for (P,N,m) in zip((P1,P2,P3,P4), (N1,N2,N3,N4), (m1,m2,m3,m4))
         dict1 = dictionary(P,N)
@@ -113,13 +112,17 @@ using FrameFunTranslates.SparseAZ: sparseAAZAmatrix, sparseidentity, overlapping
         dict2 = dualdictionary(P,N,μ)
         L = LinearIndices(size(dict1))
 
-        AAZA = sparseAAZAmatrix(dict1,dict2,g)
+        AAZA = sparse_reducedAAZAoperator(P,N;L=m.*N).A
+        @test AAZA isa SparseMatrixCSC
 
         A_ref = Matrix(AZ_A(P,N;L=m.*N))
         Z_ref = Matrix(AZ_Z(P,N;L=m.*N))
-        ix1 = nonzero_cols(dict1, g)
-        A = sparseRAE(dict1, g, ix1)
-        ix2 = overlappingindices(dict2, g, findall(nonzero_rows(A)))
+        ix1 = nonzero_coefficients(P,N;L=m.*N)
+        A = sparseRAE(P,N, ix1;L=m.*N)
+
+        dual_cvecs = map(compactinfinitevector,elements(basis(azdual_dict(P,N;L=m.*N))), elements(γ))
+        ix2 = overlappingindices(dual_cvecs, g, findall(nonzero_rows(A)), N, m.*N)
+
         @test sort(ix2) == sort(findall(reshape(sum(abs.(Z_ref[findall(nonzero_rows(A)),:]),dims = 1)[:] .> 0,size(dict2))    ))
         ZAref1 = (Z_ref'A_ref)[:,L[ix1]]
         ZAref1[L[ix2],:] .= 0
@@ -133,14 +136,14 @@ using FrameFunTranslates.SparseAZ: sparseAAZAmatrix, sparseidentity, overlapping
         @test norm(ImZAref1) < 1e-10
 
         ix3 = unique(sort(vcat(ix1,ix2)))
-        Z = sparseRAE(dict2, g, ix3)
+        Z = _sparseRAE(dual_cvecs, g, ix3, N)
         @test Z'A ≈ (Z_ref'A_ref)[L[ix3],L[ix1]]
 
         I_ref = sparse(Matrix{Int}(I, length(dict1),length(dict1))[L[ix3],L[ix1]] )
         II = sparseidentity(ix1,ix3)
         @test I_ref ≈ II
         @test I_ref - Z'A ≈ (I-Z_ref'A_ref)[L[ix3],L[ix1]]
-        indices = LinearIndices(size(dict1))[nonzero_cols(dict1,μ)]
+        indices = LinearIndices(size(dict1))[ix1]
         AAZAref = A_ref-A_ref*Z_ref'*A_ref
         @test (AAZAref)[:,indices] ≈ AAZA
         (AAZAref)[:,indices].=0

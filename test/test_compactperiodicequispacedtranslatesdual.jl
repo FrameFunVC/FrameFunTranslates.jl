@@ -1,6 +1,6 @@
 
 
-using Test, BasisFunctions, FrameFun, FrameFunTranslates, CompactTranslatesDict
+using Test, BasisFunctions, FrameFun, FrameFunTranslates, CompactTranslatesDict, CardinalBSplines
 using GridArrays: similargrid
 
 N = 10

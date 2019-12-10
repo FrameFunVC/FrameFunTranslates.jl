@@ -1,7 +1,6 @@
 
 
 using FrameFunTranslates, Test
-using FrameFunTranslates.CompactAZ.ReducedAZ.ReductionSolvers: truncated_size
 @testset "truncated size" begin
     Ns = 20:20:300
     ds = 1:4
@@ -11,9 +10,7 @@ using FrameFunTranslates.CompactAZ.ReducedAZ.ReductionSolvers: truncated_size
     rowsizes = similar(colsizes)
     for (i,PLATFORM) in enumerate(PLATFORMs), (j,d) in enumerate(ds), (k,N) in enumerate(Ns), (l,crop_tol) in enumerate(crop_tols)
         P = ExtensionFramePlatform(PLATFORM(d), 0.0..0.5);
-        plunge = plungeoperator(P,N;L=4N); A = AZ_A(P,N;L=4N); Zt = AZ_Zt(P,N;L=4N);
-        M = plunge*A;
-        colsizes[i,j,k,l], rowsizes[i,j,k,l]  = truncated_size(ReductionSolver(M; crop_tol=crop_tol))
+        colsizes[i,j,k,l], rowsizes[i,j,k,l] = size(reducedAAZAoperator(P,N;solverstyle=ReducedAZStyle(),nz_tol=crop_tol))
     end
 
     @test all(rowsizes[:,1,:,:] .== 2)
@@ -43,7 +40,6 @@ using FrameFunTranslates.CompactAZ.ReducedAZ.ReductionSolvers: truncated_size
 end
 
 using FrameFunTranslates, Test
-using FrameFunTranslates.CompactAZ.ReducedAZ.ReductionSolvers: ReductionSolver
 @testset "loss of information" begin
     Ns = [300,]
     ds = 1:4
@@ -53,15 +49,14 @@ using FrameFunTranslates.CompactAZ.ReducedAZ.ReductionSolvers: ReductionSolver
         P = ExtensionFramePlatform(PLATFORM(d), 0.0..0.5);
         plunge = plungeoperator(P,N;L=4N); A = AZ_A(P,N;L=4N); Zt = AZ_Zt(P,N;L=4N);
         M = plunge*A;
-        S = ReductionSolver(M; crop_tol=crop_tol)
-        @test all(size(M) .> truncated_size(S))
-        @test norm(M)≈norm(S.sol.op)
+        S = reducedAAZAoperator(P,N;solverstyle=ReducedAZStyle(),nz_tol=crop_tol)
+        @test all(size(M) .> size(S))
+        @test norm(M)≈norm(S)
     end
 end
 
 
 using Test, FrameFunTranslates, Statistics
-using FrameFunTranslates.CompactAZ.ReducedAZ.ReductionSolvers: ReductionSolver
 @testset "errors, and timings" begin
     PLATFORMs = (EpsBSplinePlatform, BSplinePlatform, CDBSplinePlatform)
         Ns1 = [1<<k for k in 4:10]
@@ -72,13 +67,13 @@ using FrameFunTranslates.CompactAZ.ReducedAZ.ReductionSolvers: ReductionSolver
 
     for (i,PLATFORM) in enumerate(PLATFORMs), (j,d) in enumerate(ds), (k,N) in enumerate(Ns1)
         P = ExtensionFramePlatform(PLATFORM(d), 0.0..0.5);
-        F,_ = @timed Fun(exp, P, N;L=4N, REG=ReductionSolver, crop=true, crop_tol=1e-10)
+        F,_ = @timed Fun(exp, P, N;L=4N, solverstyle=ReducedAZStyle(),nz_tol=1e-10)
         errors[i,j,k] = abserror(exp, F)
     end
 
     for (i,PLATFORM) in enumerate(PLATFORMs), (j,d) in enumerate(ds), (k,N) in enumerate(Ns2)
         P = ExtensionFramePlatform(PLATFORM(d), 0.0..0.5);
-        timings[i,j,k]= median([@timed(Fun(exp, P, N;L=4N, REG=ReductionSolver, crop=true, crop_tol=1e-10))[2] for l in 1:4])
+        timings[i,j,k]= median([@timed(Fun(exp, P, N;L=4N, solverstyle=ReducedAZStyle(), nz_tol=1e-10))[2] for l in 1:4])
     end
 
     # Test if errors go down fast enough
