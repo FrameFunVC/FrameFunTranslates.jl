@@ -12,6 +12,29 @@ using FrameFunTranslates, Test, DomainSets, FrameFun
         colsizes[i,j,k,l], rowsizes[i,j,k,l] = size(reducedAAZAoperator(P,N;solverstyle=ReducedAZStyle(),nz_tol=crop_tol))
     end
 
+
+
+    # Test CDBSplinePlatform
+    @show extrema(colsizes[3,1,:,1])
+    @show extrema(colsizes[3,1,:,2])
+    @show  extrema(colsizes[3,2,:,1])
+    @show  extrema(colsizes[3,2,:,2])
+    @show  extrema(colsizes[3,4,:,2])
+    @show  extrema(colsizes[3,4,:,1][2:end])
+
+    @show extrema(colsizes[2,1,:,1][end-1:end])
+    @show extrema(colsizes[2,1,:,2][end-1:end])
+    @show extrema(colsizes[2,2,:,1][end-1:end])
+    @show extrema(colsizes[2,2,:,2][end-1:end])
+    @show extrema(colsizes[2,4,:,2][end-1:end])
+    @show extrema(colsizes[2,4,:,1][2:end][end-1:end])
+
+    @show extrema(colsizes[1,1,:,2][end-4:end])
+    @show extrema(colsizes[1,2,:,2][end-4:end])
+    @show extrema(colsizes[1,3,:,2][end-4:end])
+    @show extrema(colsizes[1,4,:,2][end-4:end])
+
+
     @test all(rowsizes[:,1,:,:] .== 2)
     @test all(rowsizes[:,2,:,:] .== 6)
     @test all(rowsizes[:,3,:,:] .== 6)
