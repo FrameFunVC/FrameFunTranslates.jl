@@ -1,6 +1,5 @@
 
-
-using FrameFunTranslates, Test
+using FrameFunTranslates, Test, DomainSets, FrameFun
 @testset "truncated size" begin
     Ns = 20:20:300
     ds = 1:4
@@ -31,7 +30,7 @@ using FrameFunTranslates, Test
     @test all(316 .<= colsizes[2,2,:,1][end-1:end] .<= 316)
     @test all(196 .<= colsizes[2,2,:,2][end-1:end] .<= 196)
     @test all(308 .<= colsizes[2,4,:,2][end-1:end] .<= 308)
-    @test all(543 .<= colsizes[2,4,:,1][2:end][end-1:end] .<= 544)
+    @test all(544 .<= colsizes[2,4,:,1][2:end][end-1:end] .<= 546)
 
     @test all(122 .<= colsizes[1,1,:,2][end-4:end] .<= 122)
     @test all(196 .<= colsizes[1,2,:,2][end-4:end] .<= 196)

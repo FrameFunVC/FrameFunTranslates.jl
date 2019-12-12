@@ -44,10 +44,10 @@ module CompactFrameFunExtension
     @efplatformtobasisplatforms reducedAAZAoperator
     reducedAAZAoperator(samplingstyle::SamplingStyle, ap::ApproximationProblem; L=samplingparameter(ap), options...) =
         reducedAAZAoperator(samplingstyle, ap, L; options...)
-    ef_reducedAAZAoperator(samplingstyle::SamplingStyle, platform::ExtensionFramePlatform, param, platforms::Tuple, L; options...) =
+    ef_reducedAAZAoperator(samplingstyle::SamplingStyle, platform::Platform, param, platforms::Tuple, L; options...) =
         default_ef_reducedAAZAoperator(samplingstyle, platform, param, platforms, L; return_nzrows=false, options...)
 
-    function default_ef_reducedAAZAoperator(samplingstyle::SamplingStyle, platform::ExtensionFramePlatform, param, platforms, L; verbose=false, return_nzrows, options...)
+    function default_ef_reducedAAZAoperator(samplingstyle::SamplingStyle, platform::Platform, param, platforms, L; verbose=false, return_nzrows, options...)
         nonzero_coefs = haskey(options, :nonzero_coefs) ? options[:nonzero_coefs] : ef_nonzero_coefficients(samplingstyle, platform, param, platforms, L; verbose=verbose, options...)
         M = haskey(options, :AAZA) ? options[:AAZA] : firstAZstepoperator(platform, param; samplingstyle=samplingstyle, L=L, verbose=verbose, options...)
         nz_tol = haskey(options, :nz_tol) ? options[:nz_tol] : default_threshold(M)
@@ -88,9 +88,9 @@ module CompactFrameFunExtension
     reducedAZ_AAZAreductionsolver(ss::SamplingStyle, ap::ApproximationProblem; L=samplingparameter(ap), directsolver=:qr, options...) =
         reducedAZ_AAZAreductionsolver(ss, ap, L, directsolver; options...)
 
-    ef_reducedAZ_AAZAreductionsolver(samplingstyle::SamplingStyle, platform::ExtensionFramePlatform, param, platforms::Tuple, L, directsolver; options...) =
+    ef_reducedAZ_AAZAreductionsolver(samplingstyle::SamplingStyle, platform::Platform, param, platforms::Tuple, L, directsolver; options...) =
         default_ef_reducedAZ_AAZAreductionsolver(samplingstyle, platform, param, platforms, L, directsolver; options...)
-    function default_ef_reducedAZ_AAZAreductionsolver(samplingstyle::SamplingStyle, platform::ExtensionFramePlatform, param, platforms::Tuple, L, directsolver; verbose=false, options...)
+    function default_ef_reducedAZ_AAZAreductionsolver(samplingstyle::SamplingStyle, platform::Platform, param, platforms::Tuple, L, directsolver; verbose=false, options...)
         nonzero_coefs = haskey(options, :nonzero_coefs) ? options[:nonzero_coefs] : ef_nonzero_coefficients(samplingstyle, platform, param, platforms, L;verbose=verbose,  options...)
         M = firstAZstepoperator(platform, param; samplingstyle=samplingstyle, L=L, options...)
         rM, nonzero_rows = ef_reducedAAZAoperator(samplingstyle, platform, param, platforms, L; verbose=verbose, AAZAoperator=M, nonzero_coefs=nonzero_coefs, return_nzrows=true, options...)
@@ -114,13 +114,13 @@ module CompactFrameFunExtension
     compactsupport(samplingstyle::SamplingStyle, ap::ApproximationProblem; options...) =
         compactsupport(samplingstyle, platform(ap), parameter(ap), samplingparameter(ap); options...)
 
-    function compactsupport(ss::OversamplingStyle, platform::Platform, param, L; options...)
-        os_grid = haskey(options, :os_grid) ? options[:os_grid] : oversampling_grid(samplingstyle, platform, param, L; options...)
+    function compactsupport(ss::DiscreteStyle, platform::Platform, param, L; options...)
+        os_grid = haskey(options, :os_grid) ? options[:os_grid] : sampling_grid(samplingstyle, platform, param, L; options...)
         compactsupport(ss, basisplatform, param, os_grid; options..., os_grid=os_grid)
     end
-    compactsupport(ss::OversamplingStyle, bplatform::ExtensionFramePlatform, param, platforms::Tuple, os_grid::AbstractGrid; options...) =
+    compactsupport(ss::DiscreteStyle, bplatform::ExtensionFramePlatform, param, platforms::Tuple, os_grid::AbstractGrid; options...) =
         error("Should not reach here.")
-    compactsupport(ss::OversamplingStyle, bplatform::Platform, param, platforms::Tuple, os_grid::AbstractGrid; options...) =
+    compactsupport(ss::DiscreteStyle, bplatform::Platform, param, platforms::Tuple, os_grid::AbstractGrid; options...) =
         compactsupport(compactinfinitevectors(ss, bplatform, param, platforms, os_grid; options...))
     function compactsupport(vecs::NTuple{N,CompactInfiniteVector}) where N
         supports = map(InfiniteVectors.support, vecs)
@@ -132,17 +132,17 @@ module CompactFrameFunExtension
     @trial compactinfinitevectors
     compactinfinitevectors(samplingstyle::SamplingStyle, ap::ApproximationProblem; options...) =
         compactinfinitevectors(samplingstyle, platform(ap), parameter(ap), samplingparameter(ap); options...)
-    function compactinfinitevectors(ss::OversamplingStyle, platform::Platform, param, L; options...)
-        os_grid = haskey(options, :os_grid) ? options[:os_grid] : oversampling_grid(samplingstyle, platform, param, L; options...)
+    function compactinfinitevectors(ss::DiscreteStyle, platform::Platform, param, L; options...)
+        os_grid = haskey(options, :os_grid) ? options[:os_grid] : sampling_grid(samplingstyle, platform, param, L; options...)
         compactinfinitevectors(ss, platform, param, os_grid; options...)
     end
-    compactinfinitevectors(ss::OversamplingStyle, bplatform::ProductPlatform, param, os_grid::AbstractGrid; options...) =
+    compactinfinitevectors(ss::DiscreteStyle, bplatform::ProductPlatform, param, os_grid::AbstractGrid; options...) =
         compactinfinitevectors(ss, bplatform, param, elements(bplatform), os_grid; options...)
-    compactinfinitevectors(ss::OversamplingStyle, bplatform::BasisPlatform, param, os_grid::AbstractGrid; options...) =
+    compactinfinitevectors(ss::DiscreteStyle, bplatform::BasisPlatform, param, os_grid::AbstractGrid; options...) =
         compactinfinitevectors(ss, bplatform, param, tuple(bplatform), os_grid; options...)
-    compactinfinitevectors(ss::OversamplingStyle, bplatform::Platform, param, platforms::Tuple{<:AbstractPeriodicEquispacedTranslatesPlatform}, os_grid::AbstractIntervalGrid; options...) =
+    compactinfinitevectors(ss::DiscreteStyle, bplatform::Platform, param, platforms::Tuple{<:AbstractPeriodicEquispacedTranslatesPlatform}, os_grid::AbstractIntervalGrid; options...) =
         tuple(compactinfinitevector(dictionary(bplatform, param), os_grid))
-    compactinfinitevectors(ss::OversamplingStyle, bplatform::Platform, param, platforms::Tuple{Vararg{<:AbstractPeriodicEquispacedTranslatesPlatform}}, os_grid::ProductGrid; options...) =
+    compactinfinitevectors(ss::DiscreteStyle, bplatform::Platform, param, platforms::Tuple{Vararg{<:AbstractPeriodicEquispacedTranslatesPlatform}}, os_grid::ProductGrid; options...) =
         map(compactinfinitevector, map(dictionary, platforms, param), elements(os_grid))
 
     export nonzero_coefficients
@@ -151,12 +151,12 @@ module CompactFrameFunExtension
     nonzero_coefficients(samplingstyle::SamplingStyle, ap::ApproximationProblem; options...) =
         nonzero_coefficients(samplingstyle, platform(ap), parameter(ap), samplingparameter(ap); options...)
 
-    function ef_nonzero_coefficients(samplingstyle::SamplingStyle, platform::ExtensionFramePlatform, param, platforms::Tuple, L; options...)
-        os_grid = haskey(options, :os_grid) ? options[:os_grid] : oversampling_grid(samplingstyle, platform, param, L; options...)
+    function ef_nonzero_coefficients(samplingstyle::SamplingStyle, platform::Platform, param, platforms::Tuple, L; options...)
+        os_grid = haskey(options, :os_grid) ? options[:os_grid] : sampling_grid(samplingstyle, platform, param, L; options...)
         q = div.(L, param)
         ef_nonzero_coefficients(samplingstyle, platform, param, platforms, q, os_grid; options...)
     end
-    ef_nonzero_coefficients(ss::OversamplingStyle, platform::ExtensionFramePlatform, param, platforms::Tuple, q, os_grid::AbstractGrid; dict=dictionary(platform,param), options...) =
+    ef_nonzero_coefficients(ss::DiscreteStyle, platform::Platform, param, platforms::Tuple, q, os_grid::AbstractGrid; dict=dictionary(platform,param), options...) =
         default_ef_nonzero_coefficients(ss, dict)
     function default_ef_nonzero_coefficients(ss::SamplingStyle, dict::Dictionary; options...)
         @debug "Not enough information to detect sparse structure"
@@ -164,7 +164,7 @@ module CompactFrameFunExtension
         eachindex(dict)
     end
 
-    ef_nonzero_coefficients(ss::OversamplingStyle, platform::ExtensionFramePlatform, param, platforms::Tuple{Vararg{<:AbstractPeriodicEquispacedTranslatesPlatform}}, q, os_grid::AbstractGrid; options...) =
+    ef_nonzero_coefficients(ss::DiscreteStyle, platform::Platform, param, platforms::Tuple{Vararg{<:AbstractPeriodicEquispacedTranslatesPlatform}}, q, os_grid::AbstractGrid; options...) =
         _nonzero_coefficients(compactsupport(ss, platform.basisplatform, param, platforms, supergrid(os_grid); os_grid=supergrid(os_grid), options...), q, mask(os_grid))
 
     using GridArrays.ModCartesianIndicesBase: ModCartesianIndices
@@ -200,12 +200,12 @@ module CompactFrameFunExtension
     sparseAZ_AAZAreductionsolver(ss::SamplingStyle, ap::ApproximationProblem; L=samplingparameter(ap), directsolver=SPQR_solver, options...) =
         sparseAZ_AAZAreductionsolver(ss, ap, L, directsolver; options...)
 
-    ef_sparseAZ_AAZAreductionsolver(samplingstyle::SamplingStyle, platform::ExtensionFramePlatform, param, platforms::Tuple, L, directsolver; options...) =
+    ef_sparseAZ_AAZAreductionsolver(samplingstyle::SamplingStyle, platform::Platform, param, platforms::Tuple, L, directsolver; options...) =
         default_ef_sparseAZ_AAZAreductionsolver(samplingstyle, platform, param, platforms, L, directsolver; options...)
 
-    function default_ef_sparseAZ_AAZAreductionsolver(samplingstyle::SamplingStyle, platform::ExtensionFramePlatform, param, platforms::Tuple, L, directsolver; verbose=false, options...)
+    function default_ef_sparseAZ_AAZAreductionsolver(samplingstyle::SamplingStyle, platform::Platform, param, platforms::Tuple, L, directsolver; verbose=false, options...)
         nonzero_coefs = haskey(options, :nonzero_coefs) ? options[:nonzero_coefs] : ef_nonzero_coefficients(samplingstyle, platform, param, platforms, L;verbose=verbose,  options...)
-        os_grid = haskey(options, :os_grid) ? options[:os_grid] : oversampling_grid(samplingstyle, platform, param, L; verbose=verbose, options...)
+        os_grid = haskey(options, :os_grid) ? options[:os_grid] : sampling_grid(samplingstyle, platform, param, L; verbose=verbose, options...)
         rM = haskey(options, :sparse_reducedAAZAoperator) ? options[:sparse_reducedAAZAoperator] : sparse_reducedAAZAoperator(samplingstyle, platform, param, L; verbose=verbose, os_grid=os_grid, nonzero_coefs=nonzero_coefs, options...)
         verbose && @info "Sparse AZ: use $(directsolver) as solver for first sparse AZ step"
         IndexExtensionOperator(dictionary(platform, param),nonzero_coefs)*FrameFunInterface.directsolver(rM; verbose=verbose, directsolver=directsolver, options...)
@@ -217,10 +217,10 @@ module CompactFrameFunExtension
     sparse_reducedAAZAoperator(ss::SamplingStyle, ap::ApproximationProblem; L=samplingparameter(ap), options...) =
         sparse_reducedAAZAoperator(ss, ap, L; options...)
 
-    ef_sparse_reducedAAZAoperator(samplingstyle::SamplingStyle, platform::ExtensionFramePlatform, param, platforms::Tuple, L; options...) =
+    ef_sparse_reducedAAZAoperator(samplingstyle::SamplingStyle, platform::Platform, param, platforms::Tuple, L; options...) =
         default_ef_sparse_reducedAAZAoperator(samplingstyle, platform, param, platforms, L; options...)
-    function default_ef_sparse_reducedAAZAoperator(samplingstyle::SamplingStyle, platform::ExtensionFramePlatform, param, platforms::Tuple, L; verbose=false, nz_tol=0, options...)
-        os_grid = haskey(options, :os_grid) ? options[:os_grid] : oversampling_grid(samplingstyle, platform, param, L;verbose=verbose, options...)
+    function default_ef_sparse_reducedAAZAoperator(samplingstyle::SamplingStyle, platform::Platform, param, platforms::Tuple, L; verbose=false, nz_tol=0, options...)
+        os_grid = haskey(options, :os_grid) ? options[:os_grid] : sampling_grid(samplingstyle, platform, param, L;verbose=verbose, options...)
         nonzero_coefs = haskey(options, :nonzero_coefs) ? options[:nonzero_coefs] : ef_nonzero_coefficients(samplingstyle, platform, param, platforms, L; verbose=verbose, nz_tol=nz_tol, options..., os_grid=os_grid)
         cvecs = haskey(options, :cvecs) ? options[:cvecs] : compactinfinitevectors(samplingstyle, platform.basisplatform, param, L; verbose=verbose, nz_tol=nz_tol, options..., os_grid=supergrid(os_grid))
         csupps = compactsupport(cvecs)
@@ -275,8 +275,8 @@ module CompactFrameFunExtension
     sparseRAE(platform::Platform, param, ix; options...) = sparseRAE(approximationproblem(platform, param), ix; options...)
     sparseRAE(samplingstyle::SamplingStyle, ap::ApproximationProblem, ix; L=samplingparameter(ap), options...) =
         sparseRAE(samplingstyle, ap, L, ix; options...)
-    function ef_sparseRAE(samplingstyle::OversamplingStyle, platform::ExtensionFramePlatform, param, platforms::Tuple, L, ix; options...)
-        os_grid = haskey(options, :os_grid) ? options[:os_grid] : oversampling_grid(samplingstyle, platform, param, L; options...)
+    function ef_sparseRAE(samplingstyle::DiscreteStyle, platform::Platform, param, platforms::Tuple, L, ix; options...)
+        os_grid = haskey(options, :os_grid) ? options[:os_grid] : sampling_grid(samplingstyle, platform, param, L; options...)
         cvecs = compactinfinitevectors(samplingstyle, platform.basisplatform, param, platforms, supergrid(os_grid); options...)
         _sparseRAE(cvecs, os_grid, ix, param; options...)
     end
