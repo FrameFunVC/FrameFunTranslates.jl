@@ -1,7 +1,7 @@
 name = "FrameFunTranslates"
 uuid = "d30035f4-e938-55a2-bf66-16ee038a887d"
 authors = ["vincentcp"]
-version = "0.1.0"
+version = "0.1.1"
 
 [deps]
 BasisFunctions = "4343a256-5453-507d-8aad-01a9d7189916"

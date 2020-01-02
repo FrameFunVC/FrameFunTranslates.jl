@@ -34,14 +34,18 @@ struct SPQR_Solver{T <: CHOLMOD.VTypes} <: VectorizingSolverOperator{T}
 
     threshold::T
 
-    function SPQR_Solver(op::DictionaryOperator{T}; threshold=default_threshold(op)) where T
-        new{T}(sparse(op),Vector{T}(undef, size(op, 1)), Vector{T}(undef, size(op, 2)), threshold)
+    function SPQR_Solver(op::DictionaryOperator{T}; verbose=false, threshold=default_threshold(op)) where T
+        A = sparse(op)
+        verbose && @info "SPQR_Solver: create sparse matrix with $(nnz(A.A)) entries"
+        droptol!(A.A,threshold)
+        verbose && @info "SPQR_Solver: drop entries smaller than $(threshold): $(nnz(A.A)) entries"
+        new{T}(A, Vector{T}(undef, size(op, 1)), Vector{T}(undef, size(op, 2)), threshold)
     end
 end
 
 export SPQR_solver
-SPQR_solver(op::DictionaryOperator; threshold=default_threshold(op), options...) =
-    SPQR_Solver(op; threshold=threshold)
+SPQR_solver(op::DictionaryOperator; threshold=default_threshold(op), verbose=false, options...) =
+    SPQR_Solver(op; threshold=threshold, verbose=verbose)
 
 function linearized_apply!(op::SPQR_Solver, dest, src)
     x = spqr_solve(op.op.A, src; tol=op.threshold)

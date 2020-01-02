@@ -3,7 +3,7 @@ module CompactAZ
 using Reexport
 
 module CompactFrameFunExtension
-    using Reexport, FrameFun, BasisFunctions, FrameFun.ExtensionFramePlatforms, FrameFun.ApproximationProblems, InfiniteVectors, SparseArrays
+    using Reexport, FrameFun, BasisFunctions, FrameFun.ExtensionFramePlatforms, FrameFun.ApproximationProblems, InfiniteVectors, SparseArrays, ....TranslatesPlatforms
     using FrameFun.FrameFunInterface: @trial, @aptoplatform
     using ....SPQR_Solvers
 
@@ -194,6 +194,40 @@ module CompactFrameFunExtension
 
     include("nonzero_rows.jl")
 
+    export nonzero_pointsindices
+    @trial nonzero_pointsindices
+    @efplatformtobasisplatforms nonzero_pointsindices
+    nonzero_pointsindices(samplingstyle::SamplingStyle, ap::ApproximationProblem, ix, relative::Bool; options...) =
+        nonzero_pointsindices(samplingstyle, platform(ap), parameter(ap), samplingparameter(ap), ix, relative; options...)
+
+    function ef_nonzero_pointsindices(samplingstyle::SamplingStyle, platform::Platform, param, platforms::Tuple, L, ix, relative::Bool; options...)
+        os_grid = haskey(options, :os_grid) ? options[:os_grid] : sampling_grid(samplingstyle, platform, param, L; options...)
+        q = div.(L, param)
+        ef_nonzero_pointsindices(samplingstyle, platform, param, platforms, q, os_grid, ix, relative; options...)
+    end
+    ef_nonzero_pointsindices(ss::DiscreteStyle, platform::Platform, param, platforms::Tuple{Vararg{<:AbstractPeriodicEquispacedTranslatesPlatform}}, q, os_grid::AbstractGrid, ix, relative::Bool; options...) =
+        _nonzero_pointsindices(compactsupport(ss, platform.basisplatform, param, platforms, supergrid(os_grid); os_grid=supergrid(os_grid), options...), q, mask(os_grid), ix, relative)
+
+    function _nonzero_pointsindices(b_support::CartesianIndices{N}, m::Union{Int,NTuple{N,Int}}, gridmask::BitArray{N}, ix, relative::Bool) where N
+        gridsize = size(gridmask)
+        A = falses(gridsize)
+        for k in ix
+            l = ((k isa Int ? k : k.I) .- 1).*m
+            bk_support = b_support .+ CartesianIndex(l)
+            support_in = false
+            support_out = false
+            for i in ModCartesianIndices(gridsize, first(bk_support), last(bk_support))
+                A[i] = gridmask[i]
+            end
+        end
+        if relative
+            findall(A[gridmask])
+        else
+            findall(A)
+        end
+    end
+
+
     export sparseAZ_AAZAreductionsolver
     @trial sparseAZ_AAZAreductionsolver
     @efplatformtobasisplatforms sparseAZ_AAZAreductionsolver
@@ -375,6 +409,41 @@ module CompactFrameFunExtension
         end
         resize!(R,Ri)
         SparseMatrixCSC(length(ix2), length(ix1), colptr, R, ones(Int, Ri))
+    end
+
+    ef_reducedAZ_AAZAreductionsolver(samplingstyle::SamplingStyle, platform::Platform, param, platforms::Tuple{Vararg{<:CDBSplinePlatform}}, L, directsolver; options...) =
+        ef_true_nonzero_reducedAZ_AAZAreductionsolver(samplingstyle, platform, param, platforms, L, directsolver; options...)
+    function ef_true_nonzero_reducedAZ_AAZAreductionsolver(samplingstyle::SamplingStyle, platform::Platform, param, platforms::Tuple, L, directsolver; verbose=false, options...)
+        os_grid = haskey(options, :os_grid) ? options[:os_grid] : sampling_grid(samplingstyle, platform, param, L; verbose=verbose, options...)
+        nonzero_coefs = haskey(options, :nonzero_coefs) ? options[:nonzero_coefs] : ef_nonzero_coefficients(samplingstyle, platform, param, platforms, L; verbose=verbose, options..., os_grid=os_grid)
+        rel_nonzero_points = haskey(options, :rel_nonzero_points) ? options[:rel_nonzero_points] : ef_nonzero_pointsindices(samplingstyle, platform, param, platforms, L, nonzero_coefs, true; verbose=verbose, options..., os_grid=os_grid)
+
+        rM = ef_true_nonzero_reducedAAZAoperator(samplingstyle, platform, param, platforms, L; verbose=verbose, os_grid=os_grid, nonzero_coefs=nonzero_coefs, rel_nonzero_points=rel_nonzero_points, options...)
+        linop = BasisFunctions.LinearizationOperator(GridBasis(os_grid))
+        dest_lin = dest(linop)
+
+        IndexExtensionOperator(dictionary(platform, param),nonzero_coefs)*FrameFunInterface.directsolver(rM; verbose=verbose, directsolver=directsolver, options...)*IndexRestrictionOperator(dest_lin, rel_nonzero_points)*linop
+    end
+    ef_reducedAAZAoperator(samplingstyle::SamplingStyle, platform::Platform, param, platforms::Tuple{Vararg{<:CDBSplinePlatform}}, L; options...) =
+        ef_true_nonzero_reducedAAZAoperator(samplingstyle, platform, param, platforms, L; options...)
+    function ef_true_nonzero_reducedAAZAoperator(samplingstyle::SamplingStyle, platform::Platform, param, platforms::Tuple, L; verbose=false, options...)
+        verbose && @info "Reduced AZ: Create R(A-AZA)E operator"
+        os_grid = haskey(options, :os_grid) ? options[:os_grid] : sampling_grid(samplingstyle, platform, param, L;verbose=verbose, options...)
+        M = firstAZstepoperator(platform, param; samplingstyle=samplingstyle, L=L, verbose=verbose, options...,)
+
+        nonzero_coefs = haskey(options, :nonzero_coefs) ? options[:nonzero_coefs] : ef_nonzero_coefficients(samplingstyle, platform, param, platforms, L; verbose=verbose,  options..., os_grid=os_grid)
+        verbose && @info "Reduced AZ: Restrict columns (coefficients) from $(length(src(M))) to $(length(nonzero_coefs))"
+
+        rel_nonzero_points = haskey(options, :rel_nonzero_points) ? options[:rel_nonzero_points] : ef_nonzero_pointsindices(samplingstyle, platform, param, platforms, L, nonzero_coefs, true; verbose=verbose, options..., os_grid=os_grid)
+        verbose && @info "Reduced AZ: Restrict rows (collocation points) from $(length(os_grid)) to $(length(rel_nonzero_points))"
+
+        linop = BasisFunctions.LinearizationOperator(dest(M))
+        dest_lin = dest(linop)
+
+        grid_res = IndexRestrictionOperator(dest_lin, rel_nonzero_points)*linop
+        coef_res = IndexRestrictionOperator(src(M), nonzero_coefs)
+
+        grid_res*M*coef_res'
     end
 end
 @reexport using .CompactFrameFunExtension
