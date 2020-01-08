@@ -9,11 +9,9 @@ using FrameFunTranslates, Test, DomainSets, FrameFun
     rowsizes = similar(colsizes)
     for (i,PLATFORM) in enumerate(PLATFORMs), (j,d) in enumerate(ds), (k,N) in enumerate(Ns), (l,crop_tol) in enumerate(crop_tols)
         P = ExtensionFramePlatform(PLATFORM(d), 0.0..0.5);
-        colsizes[i,j,k,l], rowsizes[i,j,k,l] = size(reducedAAZAoperator(P,N;solverstyle=ReducedAZStyle(),nz_tol=crop_tol))
+        colsizes[i,j,k,l], rowsizes[i,j,k,l] = size(reducedAAZAoperator(P,N;solverstyle=ReducedAZStyle(),nz_tol=crop_tol,true_nonzero=false))
     end
-
-
-
+    
     # Test CDBSplinePlatform
     @show extrema(colsizes[3,1,:,1])
     @show extrema(colsizes[3,1,:,2])
@@ -59,6 +57,41 @@ using FrameFunTranslates, Test, DomainSets, FrameFun
     @test all(196 .<= colsizes[1,2,:,2][end-4:end] .<= 196)
     @test all(254 .<= colsizes[1,3,:,2][end-4:end] .<= 254)
     @test all(308 .<= colsizes[1,4,:,2][end-4:end] .<= 308)
+end
+
+@testset "truncated size" begin
+    Ns = 20:20:300
+    ds = 1:4
+    PLATFORMs = (CDBSplinePlatform,)
+    crop_tols = 10.0.^(-16.:6.:-10.)
+    colsizes = Array{Int}(undef, length(PLATFORMs), length(ds), length(Ns), length(crop_tols))
+    rowsizes = similar(colsizes)
+    for (i,PLATFORM) in enumerate(PLATFORMs), (j,d) in enumerate(ds), (k,N) in enumerate(Ns), (l,crop_tol) in enumerate(crop_tols)
+        P = ExtensionFramePlatform(PLATFORM(d), 0.0..0.5);
+        colsizes[i,j,k,l], rowsizes[i,j,k,l] = size(reducedAAZAoperator(P,N;solverstyle=ReducedAZStyle(),nz_tol=crop_tol,true_nonzero=true))
+    end
+
+    # Test CDBSplinePlatform
+    @show extrema(colsizes[1,1,:,1])
+    @show extrema(colsizes[1,1,:,2])
+    @show  extrema(colsizes[1,2,:,1])
+    @show  extrema(colsizes[1,2,:,2])
+    @show  extrema(colsizes[1,4,:,2])
+    @show  extrema(colsizes[1,4,:,1][2:end])
+
+
+    @test all(rowsizes[:,1,:,:] .== 2)
+    @test all(rowsizes[:,2,:,:] .== 6)
+    @test all(rowsizes[:,3,:,:] .== 6)
+    @test all(rowsizes[:,4,:,:] .== 10)
+
+    # Test CDBSplinePlatform
+    @test all(8 .<= colsizes[1,1,:,1] .<= 8)
+    @test all(8 .<= colsizes[1,1,:,2] .<= 8)
+    @test all(28 .<= colsizes[1,2,:,1] .<= 28)
+    @test all(28 .<= colsizes[1,2,:,2] .<= 28)
+    @test all(41 .<= colsizes[1,4,:,2] .<= 52)
+    @test all(52 .<= colsizes[1,4,:,1][2:end] .<= 52)
 end
 
 using FrameFunTranslates, Test

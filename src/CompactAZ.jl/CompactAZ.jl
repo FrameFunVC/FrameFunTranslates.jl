@@ -214,8 +214,6 @@ module CompactFrameFunExtension
         for k in ix
             l = ((k isa Int ? k : k.I) .- 1).*m
             bk_support = b_support .+ CartesianIndex(l)
-            support_in = false
-            support_out = false
             for i in ModCartesianIndices(gridsize, first(bk_support), last(bk_support))
                 A[i] = gridmask[i]
             end
@@ -226,7 +224,58 @@ module CompactFrameFunExtension
             findall(A)
         end
     end
+    export SE_K
+    const SE_K = nonzero_coefficients
+    const AAZA_nonzero_column_indexset = nonzero_coefficients
 
+    export AAZA_nonzero_row_indexset
+    @trial AAZA_nonzero_row_indexset
+    @efplatformtobasisplatforms AAZA_nonzero_row_indexset
+    AAZA_nonzero_row_indexset(ss::SamplingStyle, ap::ApproximationProblem; L=samplingparameter(ap), options...) =
+        AAZA_nonzero_row_indexset(ss, ap, L; options...)
+
+    ef_AAZA_nonzero_row_indexset(samplingstyle::SamplingStyle, platform::Platform, param, platforms::Tuple, L; options...) =
+        default_ef_AAZA_nonzero_row_indexset(samplingstyle, platform, param, platforms, L; options...)
+    function default_ef_AAZA_nonzero_row_indexset(samplingstyle::SamplingStyle, platform::Platform, param, platforms::Tuple, L; verbose=false, options...)
+        WE_K = haskey(options, :nonzero_coefs) ? options[:nonzero_coefs] : ef_nonzero_coefficients(samplingstyle, platform, param, platforms, L;verbose=verbose,  options...)
+        verbose && @info "ReducedAZStyle: WE_K has $(length(WE_K)) elements"
+        os_grid = haskey(options, :os_grid) ? options[:os_grid] : sampling_grid(samplingstyle, platform, param, L; verbose=verbose, options...)
+        verbose && @info "ReducedAZStyle: grid has $(length(os_grid)) elements"
+        # Oversampling
+        gridmask = mask(os_grid)
+
+        # WE_I1 is the union of two sets. The first one:
+        WE_I1a = WE_K
+        # The second one checks the overlapping supports of the dual
+        frame2 = azdual_dict(platform, param; verbose=verbose, samplingstyle=samplingstyle, L=L)
+        dict2 = basis(frame2)
+        cvecs_dual =  dict2 isa Dictionary1d ?
+            tuple(compactinfinitevector(dict2, supergrid(os_grid))) :
+            map(compactinfinitevector, elements(dict2), elements(supergrid(os_grid)))
+        # and primal bases
+        frame1 = dictionary(platform, param)
+        dict1 = basis(frame1)
+        cvecs =  dict1 isa Dictionary1d ?
+            tuple(compactinfinitevector(dict1, supergrid(os_grid))) :
+            map(compactinfinitevector, elements(dict1), elements(supergrid(os_grid)))
+        cvecs_supp = compactsupport(cvecs)
+        # for l in WE_K
+        # The primal basis has nonzero points for l in WE_K
+        N = size(dict1)
+        L = size(gridmask)
+        q = div.(L,N)
+
+        nonzero_pointsindices = _nonzero_pointsindices(cvecs_supp, q, gridmask, WE_K, true)
+        WE_I1b = overlappingindices(cvecs_dual, os_grid, nonzero_pointsindices, N, L)
+        # The union is
+        WE_I1 = union(WE_I1a,WE_I1b) # Not longer sorted
+        verbose && @info "ReducedAZStyle: WE_I1 has $(length(WE_I1)) elements"
+
+        # Get the nonzero points of this new index set
+        WE_M = _nonzero_pointsindices(cvecs_supp, q, gridmask, WE_I1, true)
+        verbose && @info "ReducedAZStyle: WE_M has $(length(WE_M)) elements"
+        WE_M
+    end
 
     export sparseAZ_AAZAreductionsolver
     @trial sparseAZ_AAZAreductionsolver
@@ -286,6 +335,7 @@ module CompactFrameFunExtension
     end
 
     function overlappingindices(vecs::NTuple{N,CompactInfiniteVector}, grid::AbstractGrid, ix, param, L) where N
+        @assert prod(L) == prod(size(supergrid(grid)))
         boundarygrid_subindices = subindices(grid)[ix]
         if first(boundarygrid_subindices) isa Int
             boundarygrid_subindices = map(CartesianIndex, boundarygrid_subindices)
@@ -411,12 +461,11 @@ module CompactFrameFunExtension
         SparseMatrixCSC(length(ix2), length(ix1), colptr, R, ones(Int, Ri))
     end
 
-    ef_reducedAZ_AAZAreductionsolver(samplingstyle::SamplingStyle, platform::Platform, param, platforms::Tuple{Vararg{<:CDBSplinePlatform}}, L, directsolver; options...) =
-        ef_true_nonzero_reducedAZ_AAZAreductionsolver(samplingstyle, platform, param, platforms, L, directsolver; options...)
+
     function ef_true_nonzero_reducedAZ_AAZAreductionsolver(samplingstyle::SamplingStyle, platform::Platform, param, platforms::Tuple, L, directsolver; verbose=false, options...)
         os_grid = haskey(options, :os_grid) ? options[:os_grid] : sampling_grid(samplingstyle, platform, param, L; verbose=verbose, options...)
         nonzero_coefs = haskey(options, :nonzero_coefs) ? options[:nonzero_coefs] : ef_nonzero_coefficients(samplingstyle, platform, param, platforms, L; verbose=verbose, options..., os_grid=os_grid)
-        rel_nonzero_points = haskey(options, :rel_nonzero_points) ? options[:rel_nonzero_points] : ef_nonzero_pointsindices(samplingstyle, platform, param, platforms, L, nonzero_coefs, true; verbose=verbose, options..., os_grid=os_grid)
+        rel_nonzero_points = ef_AAZA_nonzero_row_indexset(samplingstyle, platform, param, platforms, L; verbose=verbose, options..., os_grid=os_grid, nonzero_coefs=nonzero_coefs)
 
         rM = ef_true_nonzero_reducedAAZAoperator(samplingstyle, platform, param, platforms, L; verbose=verbose, os_grid=os_grid, nonzero_coefs=nonzero_coefs, rel_nonzero_points=rel_nonzero_points, options...)
         linop = BasisFunctions.LinearizationOperator(GridBasis(os_grid))
@@ -424,8 +473,12 @@ module CompactFrameFunExtension
 
         IndexExtensionOperator(dictionary(platform, param),nonzero_coefs)*FrameFunInterface.directsolver(rM; verbose=verbose, directsolver=directsolver, options...)*IndexRestrictionOperator(dest_lin, rel_nonzero_points)*linop
     end
-    ef_reducedAAZAoperator(samplingstyle::SamplingStyle, platform::Platform, param, platforms::Tuple{Vararg{<:CDBSplinePlatform}}, L; options...) =
-        ef_true_nonzero_reducedAAZAoperator(samplingstyle, platform, param, platforms, L; options...)
+
+    export true_nonzero_reducedAAZAoperator
+    @trial true_nonzero_reducedAAZAoperator
+    @efplatformtobasisplatforms true_nonzero_reducedAAZAoperator
+    true_nonzero_reducedAAZAoperator(samplingstyle::SamplingStyle, ap::ApproximationProblem; L=samplingparameter(ap), options...) =
+        true_nonzero_reducedAAZAoperator(samplingstyle, ap, L; options...)
     function ef_true_nonzero_reducedAAZAoperator(samplingstyle::SamplingStyle, platform::Platform, param, platforms::Tuple, L; verbose=false, options...)
         verbose && @info "Reduced AZ: Create R(A-AZA)E operator"
         os_grid = haskey(options, :os_grid) ? options[:os_grid] : sampling_grid(samplingstyle, platform, param, L;verbose=verbose, options...)
@@ -433,17 +486,33 @@ module CompactFrameFunExtension
 
         nonzero_coefs = haskey(options, :nonzero_coefs) ? options[:nonzero_coefs] : ef_nonzero_coefficients(samplingstyle, platform, param, platforms, L; verbose=verbose,  options..., os_grid=os_grid)
         verbose && @info "Reduced AZ: Restrict columns (coefficients) from $(length(src(M))) to $(length(nonzero_coefs))"
-
-        rel_nonzero_points = haskey(options, :rel_nonzero_points) ? options[:rel_nonzero_points] : ef_nonzero_pointsindices(samplingstyle, platform, param, platforms, L, nonzero_coefs, true; verbose=verbose, options..., os_grid=os_grid)
-        verbose && @info "Reduced AZ: Restrict rows (collocation points) from $(length(os_grid)) to $(length(rel_nonzero_points))"
+        WE_M = haskey(options, :rel_nonzero_points) ? options[:rel_nonzero_points] : ef_AAZA_nonzero_row_indexset(samplingstyle, platform, param, platforms, L; verbose=verbose, options..., os_grid=os_grid, nonzero_coefs=nonzero_coefs)
+        verbose && @info "Reduced AZ: Restrict rows (collocation points) from $(length(os_grid)) to $(length(WE_M))"
 
         linop = BasisFunctions.LinearizationOperator(dest(M))
         dest_lin = dest(linop)
 
-        grid_res = IndexRestrictionOperator(dest_lin, rel_nonzero_points)*linop
+        grid_res = IndexRestrictionOperator(dest_lin, WE_M)*linop
         coef_res = IndexRestrictionOperator(src(M), nonzero_coefs)
 
         grid_res*M*coef_res'
+    end
+
+
+    function ef_reducedAAZAoperator(samplingstyle::SamplingStyle, platform::Platform, param, platforms::Tuple{Vararg{<:CDBSplinePlatform}}, L; true_nonzero=true, options...)
+        if true_nonzero
+            ef_true_nonzero_reducedAAZAoperator(samplingstyle, platform, param, platforms, L; options...)
+        else
+            default_ef_reducedAAZAoperator(samplingstyle, platform, param, platforms, L; return_nzrows=false, options...)
+        end
+    end
+
+    function ef_reducedAZ_AAZAreductionsolver(samplingstyle::SamplingStyle, platform::Platform, param, platforms::Tuple{Vararg{<:CDBSplinePlatform}}, L, directsolver; true_nonzero=true, options...)
+        if true_nonzero
+            ef_true_nonzero_reducedAZ_AAZAreductionsolver(samplingstyle, platform, param, platforms, L, directsolver; options...)
+        else
+            default_ef_reducedAZ_AAZAreductionsolver(samplingstyle, platform, param, platforms, L, directsolver; options...)
+        end
     end
 end
 @reexport using .CompactFrameFunExtension
