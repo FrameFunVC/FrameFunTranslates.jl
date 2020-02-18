@@ -1,7 +1,7 @@
 name = "FrameFunTranslates"
 uuid = "d30035f4-e938-55a2-bf66-16ee038a887d"
 authors = ["vincentcp"]
-version = "0.1.1"
+version = "0.1.2"
 
 [deps]
 BasisFunctions = "4343a256-5453-507d-8aad-01a9d7189916"
@@ -17,7 +17,7 @@ StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 SuiteSparse = "4607b0f0-06f3-5cda-b6b1-a6196a1729e9"
 
 [compat]
-CompactTranslatesDict = "≥ 0.0.7"
+CompactTranslatesDict = "0.0.10"
 FrameFun = "≥ 0.0.5"
 julia = "1.1"
 

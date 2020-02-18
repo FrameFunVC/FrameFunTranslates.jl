@@ -57,7 +57,7 @@ function spqr_solve(A::SparseMatrixCSC{Tv}, b::Vector{Tv}; tol = _default_tol(A)
     AA = Sparse(A,0)
     B = Dense(b)
 
-    r = _spqr_solve!(ORDERING_DEFAULT, tol, 0, 2, AA,
+    @time r = _spqr_solve!(ORDERING_DEFAULT, tol, 0, 2, AA,
         C_NULL, B, C_NULL, X,
         C_NULL, C_NULL, C_NULL, C_NULL, C_NULL)
     Vector(Dense(X[]))

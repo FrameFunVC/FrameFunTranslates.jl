@@ -61,7 +61,7 @@ function dualdictionary(platform::AbstractCDPeriodicEquispacedTranslatesPlatform
         return dual(dict, measure; options...)
     else
         if isperiodic(g)
-            return CompactPeriodicEquispacedTranslatesDual(dict, m)
+            return CompactPeriodicEquispacedTranslatesDual(dict, m; options...)
         else
             error()
         end

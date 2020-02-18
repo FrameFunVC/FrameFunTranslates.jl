@@ -1,7 +1,7 @@
 language: julia
 os:
   - linux
-#  - osx: strangely the numerics are not equal for linux and osx on travis.
+  - osx
 julia:
   - 1.1
   - nightly

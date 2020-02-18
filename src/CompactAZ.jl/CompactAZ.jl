@@ -85,12 +85,16 @@ module CompactFrameFunExtension
     export reducedAZ_AAZAreductionsolver
     @trial reducedAZ_AAZAreductionsolver
     @efplatformtobasisplatforms reducedAZ_AAZAreductionsolver
-    reducedAZ_AAZAreductionsolver(ss::SamplingStyle, ap::ApproximationProblem; L=samplingparameter(ap), directsolver=:qr, options...) =
-        reducedAZ_AAZAreductionsolver(ss, ap, L, directsolver; options...)
+    function reducedAZ_AAZAreductionsolver(ss::SamplingStyle, ap::ApproximationProblem; L=samplingparameter(ap), REG=pQR_solver, options...)
+        if haskey(options, :directsolver)
+            @warn "Are you sure you want to use the `:directsolver` options and not `REG` in an AZ algorithm? "
+        end
+        reducedAZ_AAZAreductionsolver(ss, ap, L, REG; options...)
+    end
 
-    ef_reducedAZ_AAZAreductionsolver(samplingstyle::SamplingStyle, platform::Platform, param, platforms::Tuple, L, directsolver; options...) =
-        default_ef_reducedAZ_AAZAreductionsolver(samplingstyle, platform, param, platforms, L, directsolver; options...)
-    function default_ef_reducedAZ_AAZAreductionsolver(samplingstyle::SamplingStyle, platform::Platform, param, platforms::Tuple, L, directsolver; verbose=false, options...)
+    ef_reducedAZ_AAZAreductionsolver(samplingstyle::SamplingStyle, platform::Platform, param, platforms::Tuple, L, REG; options...) =
+        default_ef_reducedAZ_AAZAreductionsolver(samplingstyle, platform, param, platforms, L, REG; options...)
+    function default_ef_reducedAZ_AAZAreductionsolver(samplingstyle::SamplingStyle, platform::Platform, param, platforms::Tuple, L, REG; verbose=false, options...)
         nonzero_coefs = haskey(options, :nonzero_coefs) ? options[:nonzero_coefs] : ef_nonzero_coefficients(samplingstyle, platform, param, platforms, L;verbose=verbose,  options...)
         M = firstAZstepoperator(platform, param; samplingstyle=samplingstyle, L=L, options...)
         rM, nonzero_rows = ef_reducedAAZAoperator(samplingstyle, platform, param, platforms, L; verbose=verbose, AAZAoperator=M, nonzero_coefs=nonzero_coefs, return_nzrows=true, options...)
@@ -103,8 +107,8 @@ module CompactFrameFunExtension
             grid_resop = IdentityOperator(dest(M),dest(rM))
         end
 
-        verbose && @info "Reduced AZ: use $(directsolver) as solver for first reduced AZ step"
-        (dict_resop')*FrameFunInterface.directsolver(rM; verbose=verbose, directsolver=directsolver, options...)*grid_resop
+        verbose && @info "Reduced AZ: use $(REG) as solver for first reduced AZ step"
+        (dict_resop')*REG(rM; verbose=verbose, options...)*grid_resop
     end
 
     using GridArrays, CompactTranslatesDict.CompactInfiniteVectors
@@ -141,9 +145,9 @@ module CompactFrameFunExtension
     compactinfinitevectors(ss::DiscreteStyle, bplatform::BasisPlatform, param, os_grid::AbstractGrid; options...) =
         compactinfinitevectors(ss, bplatform, param, tuple(bplatform), os_grid; options...)
     compactinfinitevectors(ss::DiscreteStyle, bplatform::Platform, param, platforms::Tuple{<:AbstractPeriodicEquispacedTranslatesPlatform}, os_grid::AbstractIntervalGrid; options...) =
-        tuple(compactinfinitevector(dictionary(bplatform, param), os_grid))
+        tuple(compactinfinitevector(dictionary(bplatform, param), os_grid; options...))
     compactinfinitevectors(ss::DiscreteStyle, bplatform::Platform, param, platforms::Tuple{Vararg{<:AbstractPeriodicEquispacedTranslatesPlatform}}, os_grid::ProductGrid; options...) =
-        map(compactinfinitevector, map(dictionary, platforms, param), elements(os_grid))
+        map((x,y)->compactinfinitevector(x,y; options...), map(dictionary, platforms, param), elements(os_grid))
 
     export nonzero_coefficients
     @trial nonzero_coefficients
@@ -153,7 +157,7 @@ module CompactFrameFunExtension
 
     function ef_nonzero_coefficients(samplingstyle::SamplingStyle, platform::Platform, param, platforms::Tuple, L; options...)
         os_grid = haskey(options, :os_grid) ? options[:os_grid] : sampling_grid(samplingstyle, platform, param, L; options...)
-        q = div.(L, param)
+        q = div.(L, size(dictionary(platform,param)))
         ef_nonzero_coefficients(samplingstyle, platform, param, platforms, q, os_grid; options...)
     end
     ef_nonzero_coefficients(ss::DiscreteStyle, platform::Platform, param, platforms::Tuple, q, os_grid::AbstractGrid; dict=dictionary(platform,param), options...) =
@@ -202,7 +206,7 @@ module CompactFrameFunExtension
 
     function ef_nonzero_pointsindices(samplingstyle::SamplingStyle, platform::Platform, param, platforms::Tuple, L, ix, relative::Bool; options...)
         os_grid = haskey(options, :os_grid) ? options[:os_grid] : sampling_grid(samplingstyle, platform, param, L; options...)
-        q = div.(L, param)
+        q = div.(L, size(dictionary(platform, param)))
         ef_nonzero_pointsindices(samplingstyle, platform, param, platforms, q, os_grid, ix, relative; options...)
     end
     ef_nonzero_pointsindices(ss::DiscreteStyle, platform::Platform, param, platforms::Tuple{Vararg{<:AbstractPeriodicEquispacedTranslatesPlatform}}, q, os_grid::AbstractGrid, ix, relative::Bool; options...) =
@@ -247,17 +251,17 @@ module CompactFrameFunExtension
         # WE_I1 is the union of two sets. The first one:
         WE_I1a = WE_K
         # The second one checks the overlapping supports of the dual
-        frame2 = azdual_dict(platform, param; verbose=verbose, samplingstyle=samplingstyle, L=L)
+        frame2 = azdual_dict(platform, param; verbose=verbose, samplingstyle=samplingstyle, L=L, options...)
         dict2 = basis(frame2)
         cvecs_dual =  dict2 isa Dictionary1d ?
-            tuple(compactinfinitevector(dict2, supergrid(os_grid))) :
-            map(compactinfinitevector, elements(dict2), elements(supergrid(os_grid)))
+            tuple(compactinfinitevector(dict2, supergrid(os_grid); verbose=verbose, options...)) :
+            map((x,y)->compactinfinitevector(x, y; verbose=verbose, options...), elements(dict2), elements(supergrid(os_grid)))
         # and primal bases
         frame1 = dictionary(platform, param)
         dict1 = basis(frame1)
         cvecs =  dict1 isa Dictionary1d ?
-            tuple(compactinfinitevector(dict1, supergrid(os_grid))) :
-            map(compactinfinitevector, elements(dict1), elements(supergrid(os_grid)))
+            tuple(compactinfinitevector(dict1, supergrid(os_grid); verbose=verbose, options...)) :
+            map((x,y)->compactinfinitevector(x, y; verbose=verbose, options...), elements(dict1), elements(supergrid(os_grid)))
         cvecs_supp = compactsupport(cvecs)
         # for l in WE_K
         # The primal basis has nonzero points for l in WE_K
@@ -280,25 +284,40 @@ module CompactFrameFunExtension
     export sparseAZ_AAZAreductionsolver
     @trial sparseAZ_AAZAreductionsolver
     @efplatformtobasisplatforms sparseAZ_AAZAreductionsolver
-    sparseAZ_AAZAreductionsolver(ss::SamplingStyle, ap::ApproximationProblem; L=samplingparameter(ap), directsolver=SPQR_solver, options...) =
-        sparseAZ_AAZAreductionsolver(ss, ap, L, directsolver; options...)
+    function sparseAZ_AAZAreductionsolver(ss::SamplingStyle, ap::ApproximationProblem; L=samplingparameter(ap), REG=SPQR_solver, options...)
+        if haskey(options, :directsolver)
+            @warn "Are you sure you want to use the `:directsolver` options and not `REG` in an AZ algorithm? "
+        end
+        sparseAZ_AAZAreductionsolver(ss, ap, L, REG; options...)
+    end
 
-    ef_sparseAZ_AAZAreductionsolver(samplingstyle::SamplingStyle, platform::Platform, param, platforms::Tuple, L, directsolver; options...) =
-        default_ef_sparseAZ_AAZAreductionsolver(samplingstyle, platform, param, platforms, L, directsolver; options...)
+    ef_sparseAZ_AAZAreductionsolver(samplingstyle::SamplingStyle, platform::Platform, param, platforms::Tuple, L, REG; options...) =
+        default_ef_sparseAZ_AAZAreductionsolver(samplingstyle, platform, param, platforms, L, REG; options...)
 
-    function default_ef_sparseAZ_AAZAreductionsolver(samplingstyle::SamplingStyle, platform::Platform, param, platforms::Tuple, L, directsolver; verbose=false, options...)
+    function default_ef_sparseAZ_AAZAreductionsolver(samplingstyle::SamplingStyle, platform::Platform, param, platforms::Tuple, L, REG;
+            verbose=false, weightedAZ=false,  options...)
         nonzero_coefs = haskey(options, :nonzero_coefs) ? options[:nonzero_coefs] : ef_nonzero_coefficients(samplingstyle, platform, param, platforms, L;verbose=verbose,  options...)
         os_grid = haskey(options, :os_grid) ? options[:os_grid] : sampling_grid(samplingstyle, platform, param, L; verbose=verbose, options...)
         rM = haskey(options, :sparse_reducedAAZAoperator) ? options[:sparse_reducedAAZAoperator] : sparse_reducedAAZAoperator(samplingstyle, platform, param, L; verbose=verbose, os_grid=os_grid, nonzero_coefs=nonzero_coefs, options...)
-        verbose && @info "Sparse AZ: use $(directsolver) as solver for first sparse AZ step"
-        IndexExtensionOperator(dictionary(platform, param),nonzero_coefs)*FrameFunInterface.directsolver(rM; verbose=verbose, directsolver=directsolver, options...)
+        verbose && @info "Sparse AZ: use $(REG) as solver for first sparse AZ step"
+
+
+
+        if weightedAZ
+            error("not implemented")
+        end
+        IndexExtensionOperator(dictionary(platform, param),nonzero_coefs)*REG(rM; verbose=verbose, options...)
     end
 
     export sparse_reducedAAZAoperator
     @trial sparse_reducedAAZAoperator
     @efplatformtobasisplatforms sparse_reducedAAZAoperator
-    sparse_reducedAAZAoperator(ss::SamplingStyle, ap::ApproximationProblem; L=samplingparameter(ap), options...) =
+    function sparse_reducedAAZAoperator(ss::SamplingStyle, ap::ApproximationProblem; L=samplingparameter(ap), options...)
+        if haskey(options, :directsolver)
+            @warn "Are you sure you want to use the `:directsolver` options and not `REG` in an AZ algorithm? "
+        end
         sparse_reducedAAZAoperator(ss, ap, L; options...)
+    end
 
     ef_sparse_reducedAAZAoperator(samplingstyle::SamplingStyle, platform::Platform, param, platforms::Tuple, L; options...) =
         default_ef_sparse_reducedAAZAoperator(samplingstyle, platform, param, platforms, L; options...)
@@ -307,25 +326,26 @@ module CompactFrameFunExtension
         nonzero_coefs = haskey(options, :nonzero_coefs) ? options[:nonzero_coefs] : ef_nonzero_coefficients(samplingstyle, platform, param, platforms, L; verbose=verbose, nz_tol=nz_tol, options..., os_grid=os_grid)
         cvecs = haskey(options, :cvecs) ? options[:cvecs] : compactinfinitevectors(samplingstyle, platform.basisplatform, param, L; verbose=verbose, nz_tol=nz_tol, options..., os_grid=supergrid(os_grid))
         csupps = compactsupport(cvecs)
-        q = div.(L, param)
-
         verbose && @info "SparseAZStyle: create sparse A-AZ^*A"
-        frame2 = azdual_dict(platform, param; verbose=verbose, nz_tol=nz_tol, samplingstyle=samplingstyle, L=L)
+        frame2 = azdual_dict(platform, param; options..., verbose=verbose, nz_tol=nz_tol, samplingstyle=samplingstyle, L=L)
         dict2 = basis(frame2)
         cvecs_dual =  dict2 isa Dictionary1d ?
-            tuple(compactinfinitevector(dict2, supergrid(os_grid))) :
-            map(compactinfinitevector, elements(dict2), elements(supergrid(os_grid)))
+            tuple(compactinfinitevector(dict2, supergrid(os_grid); nz_tol=nz_tol, verbose=verbose, options...)) :
+            map((x,y)->compactinfinitevector(x, y; nz_tol=nz_tol, verbose=verbose, options...), elements(dict2), elements(supergrid(os_grid)))
+
+        N = size(dict2)
+        q = div.(L, N)
 
         ix1 = nonzero_coefs
-        A = _sparseRAE(cvecs, os_grid, nonzero_coefs, param; nz_tol=nz_tol, verbose=verbose, options...)
+        A = _sparseRAE(cvecs, os_grid, nonzero_coefs, N; nz_tol=nz_tol, verbose=verbose, options...)
 
-        ix2 = overlappingindices(cvecs_dual, os_grid, findall(nonzero_rows(A)), param, L)
+        ix2 = overlappingindices(cvecs_dual, os_grid, findall(nonzero_rows(A)), N, L)
         ix3 = unique(sort(vcat(ix1,ix2)))
 
-        Z = _sparseRAE(cvecs_dual, os_grid, ix3, param; nz_tol=nz_tol, verbose=verbose, options...)
+        Z = _sparseRAE(cvecs_dual, os_grid, ix3, N; nz_tol=nz_tol, verbose=verbose, options...)
         ImZA = sparseidentity(ix1,ix3)-Z'A
         droptol!(ImZA, nz_tol)
-        RAE = _sparseRAE(cvecs, os_grid, ix3, param; nz_tol=nz_tol, verbose=verbose, options...)
+        RAE = _sparseRAE(cvecs, os_grid, ix3, N; nz_tol=nz_tol, verbose=verbose, options...)
         verbose && @info "SparseAZStyle: removing everything smaller than $nz_tol"
         M = droptol!(RAE*ImZA, nz_tol)
         verbose && @info "SparseAZStyle: A-AZ^*A has size $(size(M)) and $(nnz(M)) nonzero elements ($(100nnz(M)/prod(size(M)))% fill)"
@@ -364,6 +384,9 @@ module CompactFrameFunExtension
         cvecs = compactinfinitevectors(samplingstyle, platform.basisplatform, param, platforms, supergrid(os_grid); options...)
         _sparseRAE(cvecs, os_grid, ix, param; options...)
     end
+
+    _sparseRAE(b::NTuple{1,CompactInfiniteVector}, grid::AbstractGrid, indices::AbstractVector{Int}, param::Tuple{Int}; options...) =
+        _sparseRAE(b, grid, map(x->CartesianIndex{1}(x), indices), param; options...)
 
     _sparseRAE(b::NTuple{1,CompactInfiniteVector}, grid::AbstractGrid, indices::AbstractVector{Int}, param::Int; options...) =
         _sparseRAE(b, grid, map(x->CartesianIndex{1}(x), indices), tuple(param); options...)
@@ -462,8 +485,12 @@ module CompactFrameFunExtension
     end
 
 
-    function ef_true_nonzero_reducedAZ_AAZAreductionsolver(samplingstyle::SamplingStyle, platform::Platform, param, platforms::Tuple, L, directsolver; verbose=false, options...)
-        os_grid = haskey(options, :os_grid) ? options[:os_grid] : sampling_grid(samplingstyle, platform, param, L; verbose=verbose, options...)
+    function ef_true_nonzero_reducedAZ_AAZAreductionsolver(samplingstyle::SamplingStyle, platform::Platform, param, platforms::Tuple, L, REG;
+            verbose=false, weightedAZ=false, options...)
+        if haskey(options, :directsolver)
+            @warn "Are you sure you want to use the `:directsolver` options and not `REG` in an AZ algorithm? "
+        end
+        os_grid = haskey(options, :os_grid) ? options[:os_grid] : sampling_grid(samplingstyle, platform, param, L; verbose=verbose,options...)
         nonzero_coefs = haskey(options, :nonzero_coefs) ? options[:nonzero_coefs] : ef_nonzero_coefficients(samplingstyle, platform, param, platforms, L; verbose=verbose, options..., os_grid=os_grid)
         rel_nonzero_points = ef_AAZA_nonzero_row_indexset(samplingstyle, platform, param, platforms, L; verbose=verbose, options..., os_grid=os_grid, nonzero_coefs=nonzero_coefs)
 
@@ -471,7 +498,23 @@ module CompactFrameFunExtension
         linop = BasisFunctions.LinearizationOperator(GridBasis(os_grid))
         dest_lin = dest(linop)
 
-        IndexExtensionOperator(dictionary(platform, param),nonzero_coefs)*FrameFunInterface.directsolver(rM; verbose=verbose, directsolver=directsolver, options...)*IndexRestrictionOperator(dest_lin, rel_nonzero_points)*linop
+        dict = dictionary(platform, param)
+        E = IndexExtensionOperator(dict,nonzero_coefs)
+
+        if weightedAZ
+            verbose && @info "Weighted AZ"
+            AZ_Cweight = haskey(options,:AZ_Cweight) ? options[:AZ_Cweight] : error("No options `AZ_Cweight`")
+            @assert size(src(AZ_Cweight)) == size(dict)
+            W = E'*AZ_Cweight*E
+
+            AZ_Cweight*E*
+                REG(rM*W; verbose=verbose, options...)*
+                    IndexRestrictionOperator(dest_lin, rel_nonzero_points)*linop
+        else
+            IndexExtensionOperator(dict,nonzero_coefs)*
+                REG(rM; verbose=verbose, options...)*
+                    IndexRestrictionOperator(dest_lin, rel_nonzero_points)*linop
+        end
     end
 
     export true_nonzero_reducedAAZAoperator
@@ -507,11 +550,11 @@ module CompactFrameFunExtension
         end
     end
 
-    function ef_reducedAZ_AAZAreductionsolver(samplingstyle::SamplingStyle, platform::Platform, param, platforms::Tuple{Vararg{<:CDBSplinePlatform}}, L, directsolver; true_nonzero=true, options...)
+    function ef_reducedAZ_AAZAreductionsolver(samplingstyle::SamplingStyle, platform::Platform, param, platforms::Tuple{Vararg{<:CDBSplinePlatform}}, L, REG; true_nonzero=true, options...)
         if true_nonzero
-            ef_true_nonzero_reducedAZ_AAZAreductionsolver(samplingstyle, platform, param, platforms, L, directsolver; options...)
+            ef_true_nonzero_reducedAZ_AAZAreductionsolver(samplingstyle, platform, param, platforms, L, REG; options...)
         else
-            default_ef_reducedAZ_AAZAreductionsolver(samplingstyle, platform, param, platforms, L, directsolver; options...)
+            default_ef_reducedAZ_AAZAreductionsolver(samplingstyle, platform, param, platforms, L, REG; options...)
         end
     end
 end
