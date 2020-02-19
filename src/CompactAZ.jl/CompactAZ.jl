@@ -99,10 +99,10 @@ module CompactFrameFunExtension
         M = firstAZstepoperator(platform, param; samplingstyle=samplingstyle, L=L, options...)
         rM, nonzero_rows = ef_reducedAAZAoperator(samplingstyle, platform, param, platforms, L; verbose=verbose, AAZAoperator=M, nonzero_coefs=nonzero_coefs, return_nzrows=true, options...)
 
-        dict_resop = IndexRestrictionOperator(src(M), src(rM), nonzero_coefs)
+        dict_resop = IndexRestriction(src(M), src(rM), nonzero_coefs)
         if size(rM,1) < size(M,1)
             I = LinearIndices(size(dest(M)))[nonzero_rows]
-            grid_resop = IndexRestrictionOperator(dest(M), GridBasis{coefficienttype(dest(M))}(grid(dest(M))[I]),nonzero_rows)
+            grid_resop = IndexRestriction(dest(M), GridBasis{coefficienttype(dest(M))}(grid(dest(M))[I]),nonzero_rows)
         else
             grid_resop = IdentityOperator(dest(M),dest(rM))
         end
@@ -306,7 +306,7 @@ module CompactFrameFunExtension
         if weightedAZ
             error("not implemented")
         end
-        IndexExtensionOperator(dictionary(platform, param),nonzero_coefs)*REG(rM; verbose=verbose, options...)
+        IndexExtension(dictionary(platform, param),nonzero_coefs)*REG(rM; verbose=verbose, options...)
     end
 
     export sparse_reducedAAZAoperator
@@ -499,7 +499,7 @@ module CompactFrameFunExtension
         dest_lin = dest(linop)
 
         dict = dictionary(platform, param)
-        E = IndexExtensionOperator(dict,nonzero_coefs)
+        E = IndexExtension(dict,nonzero_coefs)
 
         if weightedAZ
             verbose && @info "Weighted AZ"
@@ -509,11 +509,11 @@ module CompactFrameFunExtension
 
             AZ_Cweight*E*
                 REG(rM*W; verbose=verbose, options...)*
-                    IndexRestrictionOperator(dest_lin, rel_nonzero_points)*linop
+                    IndexRestriction(dest_lin, rel_nonzero_points)*linop
         else
-            IndexExtensionOperator(dict,nonzero_coefs)*
+            IndexExtension(dict,nonzero_coefs)*
                 REG(rM; verbose=verbose, options...)*
-                    IndexRestrictionOperator(dest_lin, rel_nonzero_points)*linop
+                    IndexRestriction(dest_lin, rel_nonzero_points)*linop
         end
     end
 
@@ -535,8 +535,8 @@ module CompactFrameFunExtension
         linop = BasisFunctions.LinearizationOperator(dest(M))
         dest_lin = dest(linop)
 
-        grid_res = IndexRestrictionOperator(dest_lin, WE_M)*linop
-        coef_res = IndexRestrictionOperator(src(M), nonzero_coefs)
+        grid_res = IndexRestriction(dest_lin, WE_M)*linop
+        coef_res = IndexRestriction(src(M), nonzero_coefs)
 
         grid_res*M*coef_res'
     end

@@ -11,7 +11,7 @@ using FrameFunTranslates, Test, DomainSets, FrameFun
         P = ExtensionFramePlatform(PLATFORM(d), 0.0..0.5);
         colsizes[i,j,k,l], rowsizes[i,j,k,l] = size(reducedAAZAoperator(P,N;solverstyle=ReducedAZStyle(),nz_tol=crop_tol,true_nonzero=false))
     end
-    
+
     # Test CDBSplinePlatform
     @show extrema(colsizes[3,1,:,1])
     @show extrema(colsizes[3,1,:,2])
@@ -44,7 +44,7 @@ using FrameFunTranslates, Test, DomainSets, FrameFun
     @test all(19 .<= colsizes[3,2,:,1] .<= 24)
     @test all(12 .<= colsizes[3,2,:,2] .<= 12)
     @test all(20 .<= colsizes[3,4,:,2] .<= 20)
-    @test all(33 .<= colsizes[3,4,:,1][2:end] .<= 42)
+    @test all(36 .<= colsizes[3,4,:,1][2:end] .<= 43)
 
     @test all(176 .<= colsizes[2,1,:,1][end-1:end] .<= 176)
     @test all(122 .<= colsizes[2,1,:,2][end-1:end] .<= 122)
@@ -113,32 +113,22 @@ end
 
 using Test, FrameFunTranslates, Statistics
 @testset "errors, and timings" begin
-    PLATFORMs = (EpsBSplinePlatform, BSplinePlatform, CDBSplinePlatform)
-        Ns1 = [1<<k for k in 4:10]
-        Ns2 = [1<<k for k in 9:16]
-        ds = 1:4
-        errors = Array{Float64}(undef, length(PLATFORMs), length(ds), length(Ns1))
-        timings = Array{Float64}(undef, length(PLATFORMs), length(ds), length(Ns2))
+PLATFORMs = (EpsBSplinePlatform, BSplinePlatform, CDBSplinePlatform)
+    Ns1 = [1<<k for k in 4:10]
+    Ns2 = [1<<k for k in 9:16]
+    ds = 1:4
+    errors = Array{Float64}(undef, length(PLATFORMs), length(ds), length(Ns1))
+    timings = Array{Float64}(undef, length(PLATFORMs), length(ds), length(Ns2))
 
-    for (i,PLATFORM) in enumerate(PLATFORMs), (j,d) in enumerate(ds), (k,N) in enumerate(Ns1)
-        P = ExtensionFramePlatform(PLATFORM(d), 0.0..0.5);
-        F,_ = @timed Fun(exp, P, N;L=4N, solverstyle=ReducedAZStyle(),nz_tol=1e-10)
-        errors[i,j,k] = abserror(exp, F)
-    end
+for (i,PLATFORM) in enumerate(PLATFORMs), (j,d) in enumerate(ds), (k,N) in enumerate(Ns1)
+    P = ExtensionFramePlatform(PLATFORM(d), 0.0..0.5);
+    F,_ = @timed Fun(exp, P, N;L=4N, solverstyle=ReducedAZStyle(),nz_tol=1e-10,lraoptions=LRAOptions(atol=1e-14))
+    errors[i,j,k] = abserror(exp, F)
+end
 
-    for (i,PLATFORM) in enumerate(PLATFORMs), (j,d) in enumerate(ds), (k,N) in enumerate(Ns2)
-        P = ExtensionFramePlatform(PLATFORM(d), 0.0..0.5);
-        timings[i,j,k]= median([@timed(Fun(exp, P, N;L=4N, solverstyle=ReducedAZStyle(), nz_tol=1e-10))[2] for l in 1:4])
-    end
-
-    # Test if errors go down fast enough
-    for (i,PLATFORM) in enumerate(PLATFORMs), (j,d) in enumerate(ds)
-        @test all(errors[i,j,:] .<= max.(Float64.(Ns1).^(-d)*errors[i,j,1]*Ns1[1]^d, 1e-10))
-    end
-
-    # Test if method is fast enough
-    for (i,PLATFORM) in enumerate(PLATFORMs), (j,d) in enumerate(ds)
-        @test all(timings[i,j,:] .<= 5e-5Ns2)
-    end
+# Test if errors go down fast enough
+for (i,PLATFORM) in enumerate(PLATFORMs), (j,d) in enumerate(ds)
+    @test all(errors[i,j,:] .<= max.(Float64.(Ns1).^(-d)*errors[i,j,1]*Ns1[1]^d, 1e-10))
+end
 
 end

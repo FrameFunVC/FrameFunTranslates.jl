@@ -46,7 +46,7 @@ D = .4*disk() + SVector(.5,.5)
 #         L = LinearIndices(size(dict1))
 #         C = CartesianIndices(size(dict1))
 #
-#         G = Matrix(mixedgramoperator(dict2,dict1,μ))
+#         G = Matrix(mixedgram(dict2,dict1,μ))
 #         indices = nonzero_cols(dict1, μ)
 #         GG = copy(G);GG[:,L[indices]] .= 0;
 #         @test sum(abs.(GG))≈count(sum(abs.(GG),dims=1) .≈1 )
@@ -96,7 +96,7 @@ using SparseArrays, Test
         s = Matrix(I-AZ_Zt(P,N)*AZ_A(P,N))
         col_indices = findall(reshape(nonzero_rows(s),size(dict1)))
         RAE =sparseRAE(P,N,col_indices;solverstyle=SparseAZStyle(),L=m.*N)
-        RAEref = sparse((E = IndexExtensionOperator(dict1, col_indices);tmp=AZ_A(P,N;L=m.*N)*E;tmp=Matrix(tmp);tmp[abs.(tmp).<1e-14].=0;tmp))
+        RAEref = sparse((E = IndexExtension(dict1, col_indices);tmp=AZ_A(P,N;L=m.*N)*E;tmp=Matrix(tmp);tmp[abs.(tmp).<1e-14].=0;tmp))
         @test RAE≈RAEref
     end
 end

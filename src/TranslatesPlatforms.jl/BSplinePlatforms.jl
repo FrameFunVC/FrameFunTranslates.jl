@@ -1,7 +1,7 @@
 module BSplinePlatforms
 
 using FrameFun.Platforms, FrameFun.BasisFunctions, CompactTranslatesDict
-
+using FrameFun.BasisFunctions: AbstractMeasure
 
 import FrameFun.Platforms: dictionary, SolverStyle, measure, SamplingStyle,
     dualdictionary, correctparamformat, unsafe_dictionary, platform
@@ -18,7 +18,7 @@ correctparamformat(::AbstractPeriodicEquispacedTranslatesPlatform, ::Int) = true
 
 abstract type AbstractEpsPeriodicEquispacedTranslatesPlatform{T,S} <: AbstractPeriodicEquispacedTranslatesPlatform{T,S} end
 
-function dualdictionary(platform::AbstractEpsPeriodicEquispacedTranslatesPlatform{T}, param, measure::Measure;
+function dualdictionary(platform::AbstractEpsPeriodicEquispacedTranslatesPlatform{T}, param, measure::AbstractMeasure;
         threshold=regularization_threshold(T), options...) where T
     dual = gramdual(dictionary(platform, param), measure;options...)
     op = BasisFunctions.operator(dual)
@@ -45,7 +45,7 @@ abstract type AbstractCDPeriodicEquispacedTranslatesPlatform{T,S}<: AbstractPeri
 SamplingStyle(::AbstractCDPeriodicEquispacedTranslatesPlatform) = OversamplingStyle()
 
 
-dualdictionary(platform::AbstractCDPeriodicEquispacedTranslatesPlatform, param, measure::Measure; options...) =
+dualdictionary(platform::AbstractCDPeriodicEquispacedTranslatesPlatform, param, measure::AbstractMeasure; options...) =
     error("No azdual_dict for `CDBSplinePlatform` and $(typeof(measure))")
 
 function dualdictionary(platform::AbstractCDPeriodicEquispacedTranslatesPlatform, param, measure::UniformDiracCombMeasure;
@@ -113,7 +113,7 @@ P   :   Periodic equispaced translates of B spline of degree 3
 M   :   Multiplication by Circulant{Float64,Complex{Float64}}
 
 
-julia> mixedgramoperator(d1,d2,discretemeasure(g))≈IdentityOperator(d1,d2)
+julia> mixedgram(d1,d2,discretemeasure(g))≈IdentityOperator(d1,d2)
 true
 ```
 """
@@ -158,7 +158,7 @@ P   :   Periodic equispaced translates of B spline of degree 3
 M   :   Multiplication by BasisFunctions.VerticalBandedMatrix{Float64}
 
 
-julia> g2 = mixedgramoperator(d1, d2, discretemeasure(sampling_grid(P,1000)))
+julia> g2 = mixedgram(d1, d2, discretemeasure(sampling_grid(P,1000)))
 Operator M₂ * M₁
 
 M₂  :   Multiplication by Circulant{Float64,Complex{Float64}}
@@ -209,7 +209,7 @@ Equispaced translates of a discrete kernel dual to B-spline
 
 
 
-julia> g2 = mixedgramoperator(d1, d2, discretemeasure(sampling_grid(P,20)))
+julia> g2 = mixedgram(d1, d2, discretemeasure(sampling_grid(P,20)))
 Operator M₂ * M₁
 
 M₂  :   Multiplication by BasisFunctions.HorizontalBandedMatrix{Float64}
@@ -282,7 +282,7 @@ P   :   Periodic equispaced translates of a periodic kernel function
 M   :   Multiplication by Circulant{Float64,Complex{Float64}}
 
 
-julia> g2 = mixedgramoperator(d1, d2, discretemeasure(sampling_grid(P,6)))
+julia> g2 = mixedgram(d1, d2, discretemeasure(sampling_grid(P,6)))
 Multiplication by Circulant{Float64,Complex{Float64}}
 
 
@@ -332,7 +332,7 @@ Equispaced translates of a discrete kernel dual
 
 
 
-julia> g2 = mixedgramoperator(d1, d2, discretemeasure(sampling_grid(P,6)))
+julia> g2 = mixedgram(d1, d2, discretemeasure(sampling_grid(P,6)))
 Operator M₁ * M₂
 
 M₂  :   Multiplication by BasisFunctions.VerticalBandedMatrix{Float64}

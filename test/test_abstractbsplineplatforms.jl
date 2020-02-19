@@ -15,8 +15,8 @@ using FrameFun.ApproximationProblems: approximationproblem
     d1 = dictionary(P,10)
     d2 = azdual_dict(P,10)
 
-    g1 = mixedgramoperator(d1, d2)
-    g2 = mixedgramoperator(d1, d2, discretemeasure(sampling_grid(P,10)))
+    g1 = mixedgram(d1, d2)
+    g2 = mixedgram(d1, d2, discretemeasure(sampling_grid(P,10)))
     @test g1 isa CirculantOperator
     @test g2 isa CirculantOperator
     @test g2 ≈ IdentityOperator(B)
@@ -26,7 +26,7 @@ using FrameFun.ApproximationProblems: approximationproblem
     d1 = dictionary(P,1000)
     d2 = azdual_dict(P,1000;threshold=1e-6)
     @test (operator(d2) isa VerticalBandedOperator)
-    g2 = mixedgramoperator(d1, d2, discretemeasure(sampling_grid(P,1000)))
+    g2 = mixedgram(d1, d2, discretemeasure(sampling_grid(P,1000)))
     @test norm(IdentityOperator(d1)-g2) < 1e-4
 
 
@@ -34,7 +34,7 @@ using FrameFun.ApproximationProblems: approximationproblem
     d1 = dictionary(P,20)
     d2 = azdual_dict(P,20)
     @test d2 isa FrameFunTranslates.BSplinePlatforms.CompactPeriodicEquispacedTranslatesDuals.CompactPeriodicEquispacedTranslatesDual
-    g2 = mixedgramoperator(d1, d2, discretemeasure(sampling_grid(P,20)))
+    g2 = mixedgram(d1, d2, discretemeasure(sampling_grid(P,20)))
     @test IdentityOperator(d1)≈g2
 
 
@@ -96,13 +96,13 @@ using Test, FrameFunTranslates
 end
 
 
-using FrameFunTranslates, Test
+using FrameFunTranslates, Test, LowRankApprox
 @testset "ExtensionFramePlatform, ReductionSolver approximation power" begin
     for d in 1:5
         for PLATFORM in (BSplinePlatform, EpsBSplinePlatform, CDBSplinePlatform)
             P = ExtensionFramePlatform(PLATFORM(d), 0.0..0.5); N = 30
             plunge = plungeoperator(P,N;L=4N); A = AZ_A(P,N;L=4N); Zt = AZ_Zt(P,N;L=4N)
-            S = reducedAZ_AAZAreductionsolver(P,N;solverstyle=ReducedAZStyle())
+            S = reducedAZ_AAZAreductionsolver(P,N;solverstyle=ReducedAZStyle(),lraoptions=LRAOptions(atol=1e-14))
             b = samplingoperator(P,N;L=4N)*exp
             x1 = S*plunge*b
             x2 = Zt*(b-A*x1)

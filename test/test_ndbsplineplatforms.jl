@@ -8,8 +8,8 @@ using FrameFunTranslates, Test
     d1 = dictionary(P,(10,10))
     d2 = azdual_dict(P,(10,10))
 
-    g1 = mixedgramoperator(d1, d2)
-    g2 = mixedgramoperator(d1, d2, discretemeasure(sampling_grid(P,(10,10))))
+    g1 = mixedgram(d1, d2)
+    g2 = mixedgram(d1, d2, discretemeasure(sampling_grid(P,(10,10))))
     all(isa.(elements(g1), CirculantOperator))
     @test all(isa.(elements(g1), CirculantOperator))
     @test all(isa.(elements(g2), CirculantOperator))
@@ -19,14 +19,14 @@ using FrameFunTranslates, Test
     g = sampling_grid(P,10)
     d1 = dictionary(P,30)
     d2 = azdual_dict(P,30;threshold=1e-4)
-    g2 = mixedgramoperator(d1, d2, discretemeasure(sampling_grid(P,30)))
+    g2 = mixedgram(d1, d2, discretemeasure(sampling_grid(P,30)))
     @test norm(IdentityOperator(d1)-g2) < 1e-2
 
     opts = (oversamplingfactor=4,)
     P = NdCDBSplinePlatform((1,3))
     d1 = dictionary(P,20)
     d2 = azdual_dict(P,20; opts...)
-    g2 = mixedgramoperator(d1, d2, discretemeasure(sampling_grid(P,20; opts...)))
+    g2 = mixedgram(d1, d2, discretemeasure(sampling_grid(P,20; opts...)))
     @test IdentityOperator(d1)≈g2
 end
 

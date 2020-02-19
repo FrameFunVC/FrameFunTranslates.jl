@@ -1,11 +1,11 @@
 
-using FrameFunTranslates, Test, LinearAlgebra
+using FrameFunTranslates, Test, LinearAlgebra, LowRankApprox
 @testset "approximation power" begin
     f = (x,y)->exp(x*y)
     for d1 in 1:2, d2 in 1:2, PLATFORM in (NdEpsBSplinePlatform, NdBSplinePlatform, NdCDBSplinePlatform), N1 in (10,15), N2 in (10,15)
         P = ExtensionFramePlatform(PLATFORM((d1,d2)), (0.0..0.5)^2); N = (N1,N2)
         plunge = plungeoperator(P,N); A = AZ_A(P,N); Zt = AZ_Zt(P,N)
-        S = reducedAZ_AAZAreductionsolver(P,N;solverstyle=ReducedAZStyle())
+        S = reducedAZ_AAZAreductionsolver(P,N;solverstyle=ReducedAZStyle(),lraoptions=LRAOptions(atol=1e-14))
         b = samplingoperator(P,N)*f
         x1 = S*plunge*b
         x2 = Zt*(b-A*x1)
@@ -16,12 +16,12 @@ end
 
 
 
-using FrameFunTranslates, Test, LinearAlgebra
+using FrameFunTranslates, Test, LinearAlgebra, LowRankApprox
 @testset "ExtensionFramePlatform, ReductionSolver AZ approximation power, Nd" begin
     f = (x,y)->exp(x*y)
     for d in 1:5, PLATFORM in (NdEpsBSplinePlatform, NdBSplinePlatform, NdCDBSplinePlatform)
         P = ExtensionFramePlatform(PLATFORM((d,d)), (0.0..0.5)^2); N = (30,30)
-        F = Fun(f, P, N;solverstyle=ReducedAZStyle())
+        F = Fun(f, P, N;solverstyle=ReducedAZStyle(),lraoptions=LRAOptions(atol=1e-14))
         b = samplingoperator(P,N)*f
         A = AZ_A(P,N)
         @test norm(A*coefficients(F)-b) < 5e-3
