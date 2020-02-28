@@ -3,7 +3,7 @@ module SparseArrayOperators
 using FrameFun.BasisFunctions
 using FrameFun.BasisFunctions: VerticalBandedMatrix, HorizontalBandedMatrix, ArrayOperator,
         IndexMatrix, ExtensionIndexMatrix, RestrictionIndexMatrix, OperatorSum
-using SparseArrays
+using SparseArrays, LinearAlgebra
 
 import SparseArrays: SparseMatrixCSC, sparse
 
@@ -14,7 +14,7 @@ end
 sparse(A::OperatorSum) = ArrayOperator(A.val1*sparse(A.op1).A+A.val2*sparse(A.op2).A, src(A), dest(A))
 sparse(A::TensorProductOperator) = ArrayOperator(kron(map(x->sparse(x).A, elements(A))...), src(A), dest(A))
 
-sparse(A::ScalingOperator) = ArrayOperator(sparse(A.A, size(A)...), src(A), dest(A))
+sparse(A::ScalingOperator) = ArrayOperator(sparse(scalar(A)*I, size(A)...), src(A), dest(A))
 
 
 colptr(::Type{Ti}, M::VerticalBandedMatrix) where Ti = Ti[1+k*length(M.array) for k in 0:size(M,2)]
