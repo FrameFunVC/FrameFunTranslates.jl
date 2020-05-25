@@ -41,10 +41,10 @@ using FrameFunTranslates, Test, DomainSets, FrameFun
     # Test CDBSplinePlatform
     @test all(0 .<= colsizes[3,1,:,1] .<= 7)
     @test all(0 .<= colsizes[3,1,:,2] .<= 0)
-    @test all(19 .<= colsizes[3,2,:,1] .<= 24)
+    @test all(16 .<= colsizes[3,2,:,1] .<= 24)
     @test all(12 .<= colsizes[3,2,:,2] .<= 12)
     @test all(20 .<= colsizes[3,4,:,2] .<= 20)
-    @test all(36 .<= colsizes[3,4,:,1][2:end] .<= 43)
+    @test all(36 .<= colsizes[3,4,:,1][2:end] .<= 44)
 
     @test all(176 .<= colsizes[2,1,:,1][end-1:end] .<= 176)
     @test all(122 .<= colsizes[2,1,:,2][end-1:end] .<= 122)
