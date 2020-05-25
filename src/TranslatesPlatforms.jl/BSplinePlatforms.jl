@@ -48,11 +48,11 @@ SamplingStyle(::AbstractCDPeriodicEquispacedTranslatesPlatform) = OversamplingSt
 dualdictionary(platform::AbstractCDPeriodicEquispacedTranslatesPlatform, param, measure::AbstractMeasure; options...) =
     error("No azdual_dict for `CDBSplinePlatform` and $(typeof(measure))")
 
-function dualdictionary(platform::AbstractCDPeriodicEquispacedTranslatesPlatform, param, measure::UniformDiracCombMeasure;
+function dualdictionary(platform::AbstractCDPeriodicEquispacedTranslatesPlatform, param, measure::UniformDiracComb;
         options...)
     dict = dictionary(platform, param)
-    g = grid(measure)
-    @assert support(dict) ≈ support(g)
+    g = points(measure)
+    @assert support(dict) ≈ coverdomain(g)
     m = length(g) / length(dict)
     @assert round(Int,m) ≈ m
     m = round(Int, m)

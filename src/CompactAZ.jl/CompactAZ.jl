@@ -5,6 +5,7 @@ using Reexport
 module CompactFrameFunExtension
     using Reexport, FrameFun, BasisFunctions, FrameFun.ExtensionFramePlatforms, FrameFun.ApproximationProblems, InfiniteVectors, SparseArrays, ....TranslatesPlatforms
     using FrameFun.FrameFunInterface: @trial, @aptoplatform
+    using BasisFunctions: OuterProductArray
     using ....SPQR_Solvers
 
     macro efplatformtobasisplatforms(ex)

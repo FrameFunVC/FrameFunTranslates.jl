@@ -1,34 +1,34 @@
 using StaticArrays, FrameFunTranslates, FrameFun, LinearAlgebra, SparseArrays, BasisFunctions, Test
 
-D = .4*disk() + SVector(.5,.5)
+D = .4*disk() .+ SVector(.5,.5)
     Pbasis = NdCDBSplinePlatform((1,1))
     P1 = ExtensionFramePlatform(Pbasis, D)
     N1 = 20,20
     m1 = (2,2)
     f1 = (x,y)->exp(x*y)
 
-    D = .4*disk() + SVector(.5,.5)
+    D = .4*disk() .+ SVector(.5,.5)
     Pbasis = NdCDBSplinePlatform((3,3))
     P3 = ExtensionFramePlatform(Pbasis, D)
     N3 = 20,20
     m3 = (2,2)
     f3 = (x,y)->exp(x*y)
 
-    D = .4*disk() + SVector(.5,.5)
+    D = .4*disk() .+ SVector(.5,.5)
     Pbasis = NdCDBSplinePlatform((2,2))
     P2 = ExtensionFramePlatform(Pbasis, D)
     N2 = 20,20
     m2 = (2,3)
     f2 = (x,y)->exp(x*y)
 
-    D = .4*ball() + SVector(.5,.5,.5)
+    D = .4*ball() .+ SVector(.5,.5,.5)
     Pbasis = NdCDBSplinePlatform((2,2,2))
     P4 = ExtensionFramePlatform(Pbasis, D)
     N4 = 20,20,10
     m4 = (2,2,2)
     f4 = (x,y,z)->exp(x*y*z)
 
-    D = .4*ball() + SVector(.5,.5,.5)
+    D = .4*ball() .+ SVector(.5,.5,.5)
     Pbasis = NdCDBSplinePlatform((3,3,3))
     P5 = ExtensionFramePlatform(Pbasis, D)
     N5 = 20,20,30
