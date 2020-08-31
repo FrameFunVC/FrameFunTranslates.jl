@@ -7,14 +7,13 @@ using SparseArrays, LinearAlgebra
 
 import SparseArrays: SparseMatrixCSC, sparse
 
-sparse(A::ArrayOperator) = ArrayOperator(sparse(A.A), src(A), dest(A))
-function sparse(A::CompositeOperator)
-    ArrayOperator(*(map(x->sparse(x).A,reverse(elements(A)))...), src(A), dest(A))
-end
-sparse(A::OperatorSum) = ArrayOperator(A.val1*sparse(A.op1).A+A.val2*sparse(A.op2).A, src(A), dest(A))
-sparse(A::TensorProductOperator) = ArrayOperator(kron(map(x->sparse(x).A, elements(A))...), src(A), dest(A))
+sparse(A::OperatorSum) = A.val1*sparse(A.op1)+A.val2*sparse(A.op2)
 
-sparse(A::ScalingOperator) = ArrayOperator(sparse(scalar(A)*I, size(A)...), src(A), dest(A))
+function sparse(A::BlockOperator)
+    B = [sparse(Ai) for Ai in elements(A)]
+    C = [vcat(B[:,i]...) for i in 1:size(B,2)]
+    hcat(C...)
+end
 
 
 colptr(::Type{Ti}, M::VerticalBandedMatrix) where Ti = Ti[1+k*length(M.array) for k in 0:size(M,2)]
@@ -59,7 +58,7 @@ function SparseMatrixCSC{Tv,Ti}(M::VerticalBandedMatrix) where {Tv,Ti}
 end
 
 SparseMatrixCSC{Tv,Ti}(M::HorizontalBandedMatrix) where {Tv,Ti} =
-    SparseMatrixCSC(M')'
+    SparseMatrixCSC(SparseMatrixCSC(M')')
 
 
 colptr(::Type{Ti},M::ExtensionIndexMatrix) where {Ti}= collect(1:size(M,2)+1)
@@ -72,6 +71,6 @@ function SparseMatrixCSC{Tv,Ti}(M::ExtensionIndexMatrix) where {Tv,Ti}
 end
 
 SparseMatrixCSC{Tv,Ti}(M::RestrictionIndexMatrix) where {Tv,Ti} =
-    SparseMatrixCSC(M')'
+    SparseMatrixCSC(SparseMatrixCSC(M')')
 
 end

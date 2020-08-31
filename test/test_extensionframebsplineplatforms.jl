@@ -18,12 +18,10 @@ using FrameFunTranslates, Test
 @testset "AZ approximation power" begin
     for d in 1:4
         for PLATFORM in (EpsBSplinePlatform, BSplinePlatform, CDBSplinePlatform)
-            @show d, PLATFORM
             P = ExtensionFramePlatform(PLATFORM(d), 0.0..0.5); N = 30
             A = AZ_A(P,N)
             b = samplingoperator(P,N;L=4N)*exp
             F = Fun(exp, P, N;L=4N, solverstyle=ReducedAZStyle(),lraoptions=LRAOptions(atol=1e-14))
-            @show norm(A*coefficients(F) -b)
             @test norm(A*coefficients(F) -b) < 5e-3
         end
     end

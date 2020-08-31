@@ -128,8 +128,8 @@ module CompactFrameFunExtension
     compactsupport(ss::DiscreteStyle, bplatform::Platform, param, platforms::Tuple, os_grid::AbstractGrid; options...) =
         compactsupport(compactinfinitevectors(ss, bplatform, param, platforms, os_grid; options...))
     function compactsupport(vecs::NTuple{N,CompactInfiniteVector}) where N
-        supports = map(InfiniteVectors.support, vecs)
-        CartesianIndex(map(x->x[1], supports)):CartesianIndex(map(x->x[end], supports))
+        supports = map(x->InfiniteVectors.support(x)[1], vecs)
+        CartesianIndices(supports)
     end
 
 

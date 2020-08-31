@@ -2,7 +2,7 @@ module SPQR_Solvers
 using SuiteSparse.CHOLMOD, SparseArrays, LinearAlgebra
 using FrameFun: default_threshold
 using SuiteSparse.SPQR: _default_tol, ORDERING_DEFAULT
-using BasisFunctions: VectorizingSolverOperator, ArrayOperator, GenericSolverOperator, DictionaryOperator
+using BasisFunctions: VectorizingSolverOperator, ArrayOperator, GenericSolverOperator, DictionaryOperator, SparseMatrixOperator
 import BasisFunctions: linearized_apply!
 
 
@@ -17,7 +17,7 @@ Note: the method relies on  `sparse(op)`. It should be efficient.
 sparseQR_solver(op::DictionaryOperator; options...) =
     GenericSolverOperator(op, sparseqr_factorization(op; options...))
 
-sparseqr_factorization(op::DictionaryOperator; threshold=default_threshold(op), options...) = qr(sparse(op).A;tol=threshold)
+sparseqr_factorization(op::DictionaryOperator; threshold=default_threshold(op), options...) = qr(sparse(op);tol=threshold)
 
 
 """
@@ -35,7 +35,7 @@ struct SPQR_Solver{T <: CHOLMOD.VTypes} <: VectorizingSolverOperator{T}
     threshold::T
 
     function SPQR_Solver(op::DictionaryOperator{T}; verbose=false, threshold=default_threshold(op)) where T
-        A = sparse(op)
+        A = SparseMatrixOperator(op)
         verbose && @info "SPQR_Solver: create sparse matrix with $(nnz(A.A)) entries"
         droptol!(A.A,threshold)
         verbose && @info "SPQR_Solver: drop entries smaller than $(threshold): $(nnz(A.A)) entries"
@@ -57,7 +57,7 @@ function spqr_solve(A::SparseMatrixCSC{Tv}, b::Vector{Tv}; tol = _default_tol(A)
     AA = Sparse(A,0)
     B = Dense(b)
 
-    @time r = _spqr_solve!(ORDERING_DEFAULT, tol, 0, 2, AA,
+    r = _spqr_solve!(ORDERING_DEFAULT, tol, 0, 2, AA,
         C_NULL, B, C_NULL, X,
         C_NULL, C_NULL, C_NULL, C_NULL, C_NULL)
     Vector(Dense(X[]))

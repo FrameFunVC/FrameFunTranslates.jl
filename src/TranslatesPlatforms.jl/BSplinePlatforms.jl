@@ -121,7 +121,7 @@ struct BSplinePlatform{T,D} <: AbstractPeriodicEquispacedTranslatesPlatform{T,T}
 end
 
 BSplinePlatform(degree::Int=3) = BSplinePlatform{Float64,degree}()
-unsafe_dictionary(platform::BSplinePlatform{T,D}, param::Int) where {T,D} = BSplineTranslatesBasis{T,D,false}(param)
+unsafe_dictionary(platform::BSplinePlatform{T,D}, param::Int) where {T,D} = BSplineTranslatesBasis{T,D,false,true}(param)
 
 
 export EpsBSplinePlatform
@@ -173,7 +173,7 @@ struct EpsBSplinePlatform{T,D} <: AbstractEpsPeriodicEquispacedTranslatesPlatfor
 end
 
 EpsBSplinePlatform(degree::Int=3) = EpsBSplinePlatform{Float64,degree}()
-unsafe_dictionary(platform::EpsBSplinePlatform{T,D}, param::Int) where {T,D} = BSplineTranslatesBasis{T,D,false}(param)
+unsafe_dictionary(platform::EpsBSplinePlatform{T,D}, param::Int) where {T,D} = BSplineTranslatesBasis{T,D,false,true}(param)
 
 export CDBSplinePlatform
 """
@@ -224,7 +224,7 @@ struct CDBSplinePlatform{T,D} <: AbstractCDPeriodicEquispacedTranslatesPlatform{
 end
 
 CDBSplinePlatform(degree::Int=3) = CDBSplinePlatform{Float64,degree}()
-unsafe_dictionary(platform::CDBSplinePlatform{T,D}, param::Int) where {T,D} = BSplineTranslatesBasis{T,D,false}(param)
+unsafe_dictionary(platform::CDBSplinePlatform{T,D}, param::Int) where {T,D} = BSplineTranslatesBasis{T,D,false,true}(param)
 
 export GaussSplinePlatform, CDGaussSplinePlatform
 struct GaussSplinePlatform{T,D} <: AbstractPeriodicEquispacedTranslatesPlatform{T,T}
