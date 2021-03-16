@@ -1,5 +1,6 @@
 
-using FrameFunTranslates, Test, DomainSets, FrameFun
+using FrameFunTranslates, Test, DomainSets, FrameFun, Statistics
+
 @testset "truncated size" begin
     Ns = 20:20:300
     ds = 1:4
@@ -33,30 +34,30 @@ using FrameFunTranslates, Test, DomainSets, FrameFun
     @show extrema(colsizes[1,4,:,2][end-4:end])
 
 
-    # @test all(rowsizes[:,1,:,:] .== 2)
-    # @test all(rowsizes[:,2,:,:] .== 6)
-    # @test all(rowsizes[:,3,:,:] .== 6)
-    # @test all(rowsizes[:,4,:,:] .== 10)
+    @test all(rowsizes[:,1,:,:] .== 2)
+    @test all(rowsizes[:,2,:,:] .== 6)
+    @test all(rowsizes[:,3,:,:] .== 6)
+    @test all(rowsizes[:,4,:,:] .== 10)
 
     # Test CDBSplinePlatform
-    # @test all(0 .<= colsizes[3,1,:,1] .<= 7)
-    # @test all(0 .<= colsizes[3,1,:,2] .<= 0)
-    # @test all(16 .<= colsizes[3,2,:,1] .<= 25)
-    # @test all(12 .<= colsizes[3,2,:,2] .<= 12)
-    # @test all(20 .<= colsizes[3,4,:,2] .<= 20)
-    # @test all(34 .<= colsizes[3,4,:,1][2:end] .<= 44)
+    @test all(0 .<= colsizes[3,1,:,1] .<= 7)
+    @test all(0 .<= colsizes[3,1,:,2] .<= 0)
+    @test all(16 .<= colsizes[3,2,:,1] .<= 25)
+    @test all(12 .<= colsizes[3,2,:,2] .<= 12)
+    @test all(20 .<= colsizes[3,4,:,2] .<= 20)
+    @test all(34 .<= colsizes[3,4,:,1][2:end] .<= 44)
 
-    # @test all(176 .<= colsizes[2,1,:,1][end-1:end] .<= 176)
-    # @test all(122 .<= colsizes[2,1,:,2][end-1:end] .<= 122)
-    # @test all(316 .<= colsizes[2,2,:,1][end-1:end] .<= 316)
-    # @test all(196 .<= colsizes[2,2,:,2][end-1:end] .<= 196)
-    # @test all(308 .<= colsizes[2,4,:,2][end-1:end] .<= 308)
-    # @test all(544 .<= colsizes[2,4,:,1][2:end][end-1:end] .<= 546)
-    #
-    # @test all(122 .<= colsizes[1,1,:,2][end-4:end] .<= 122)
-    # @test all(196 .<= colsizes[1,2,:,2][end-4:end] .<= 196)
-    # @test all(254 .<= colsizes[1,3,:,2][end-4:end] .<= 254)
-    # @test all(308 .<= colsizes[1,4,:,2][end-4:end] .<= 308)
+    @test all(176 .<= colsizes[2,1,:,1][end-1:end] .<= 176)
+    @test all(122 .<= colsizes[2,1,:,2][end-1:end] .<= 122)
+    @test all(316 .<= colsizes[2,2,:,1][end-1:end] .<= 316)
+    @test all(196 .<= colsizes[2,2,:,2][end-1:end] .<= 196)
+    @test all(308 .<= colsizes[2,4,:,2][end-1:end] .<= 308)
+    @test all(544 .<= colsizes[2,4,:,1][2:end][end-1:end] .<= 546)
+
+    @test all(122 .<= colsizes[1,1,:,2][end-4:end] .<= 122)
+    @test all(196 .<= colsizes[1,2,:,2][end-4:end] .<= 196)
+    @test all(254 .<= colsizes[1,3,:,2][end-4:end] .<= 254)
+    @test all(308 .<= colsizes[1,4,:,2][end-4:end] .<= 308)
 end
 
 @testset "truncated size" begin
@@ -80,18 +81,18 @@ end
     @show  extrema(colsizes[1,4,:,1][2:end])
 
 
-    # @test all(rowsizes[:,1,:,:] .== 2)
-    # @test all(rowsizes[:,2,:,:] .== 6)
-    # @test all(rowsizes[:,3,:,:] .== 6)
-    # @test all(rowsizes[:,4,:,:] .== 10)
-    #
-    # # Test CDBSplinePlatform
-    # @test all(8 .<= colsizes[1,1,:,1] .<= 8)
-    # @test all(8 .<= colsizes[1,1,:,2] .<= 8)
-    # @test all(28 .<= colsizes[1,2,:,1] .<= 28)
-    # @test all(28 .<= colsizes[1,2,:,2] .<= 28)
-    # @test all(41 .<= colsizes[1,4,:,2] .<= 52)
-    # @test all(52 .<= colsizes[1,4,:,1][2:end] .<= 52)
+    @test all(rowsizes[:,1,:,:] .== 2)
+    @test all(rowsizes[:,2,:,:] .== 6)
+    @test all(rowsizes[:,3,:,:] .== 6)
+    @test all(rowsizes[:,4,:,:] .== 10)
+
+    # Test CDBSplinePlatform
+    @test all(8 .<= colsizes[1,1,:,1] .<= 8)
+    @test all(8 .<= colsizes[1,1,:,2] .<= 8)
+    @test all(28 .<= colsizes[1,2,:,1] .<= 28)
+    @test all(28 .<= colsizes[1,2,:,2] .<= 28)
+    @test all(41 .<= colsizes[1,4,:,2] .<= 52)
+    @test all(52 .<= colsizes[1,4,:,1][2:end] .<= 52)
 end
 
 using FrameFunTranslates, Test
@@ -111,7 +112,6 @@ using FrameFunTranslates, Test
 end
 
 
-using Test, FrameFunTranslates, Statistics
 @testset "errors, and timings" begin
 PLATFORMs = (EpsBSplinePlatform, BSplinePlatform, CDBSplinePlatform)
     Ns1 = [1<<k for k in 4:10]

@@ -33,7 +33,7 @@ using FrameFun.ApproximationProblems: approximationproblem
     P = CDBSplinePlatform(5)
     d1 = dictionary(P,20)
     d2 = azdual_dict(P,20)
-    @test d2 isa FrameFunTranslates.BSplinePlatforms.CompactPeriodicEquispacedTranslatesDuals.CompactPeriodicEquispacedTranslatesDual
+    @test d2 isa FrameFunTranslates.BSplinePlatforms.CompactPeriodicEquispacedTranslatesDual
     g2 = mixedgram(d1, d2, discretemeasure(sampling_grid(P,20)))
     @test IdentityOperator(d1)≈g2
 

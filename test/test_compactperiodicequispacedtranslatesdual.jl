@@ -31,7 +31,7 @@ d2 = azdual_dict(P,6)
 g2 = mixedgram(d1, d2, discretemeasure(sampling_grid(P,6)))
 
 using InfiniteVectors
-b = FrameFunTranslates.BSplinePlatforms.CompactPeriodicEquispacedTranslatesDuals.signal(P.dict,2)
+b = CompactTranslatesDict.signal(P.dict,2)
 primal_signal = PeriodicInfiniteVector(b, 12)[0:11]
 c = inv(b, 2,K=d2.minimalK)
 dual_signal = PeriodicInfiniteVector(c, 12)[0:11]
