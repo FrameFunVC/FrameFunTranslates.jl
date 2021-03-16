@@ -112,7 +112,7 @@ module CompactFrameFunExtension
         (dict_resop')*REG(rM; verbose=verbose, options...)*grid_resop
     end
 
-    using GridArrays, CompactTranslatesDict.CompactInfiniteVectors
+    using GridArrays, CompactTranslatesDict
     using ....TranslatesPlatforms.BSplinePlatforms: AbstractPeriodicEquispacedTranslatesPlatform
     export compactsupport
     @trial compactsupport
@@ -172,7 +172,7 @@ module CompactFrameFunExtension
     ef_nonzero_coefficients(ss::DiscreteStyle, platform::Platform, param, platforms::Tuple{Vararg{<:AbstractPeriodicEquispacedTranslatesPlatform}}, q, os_grid::AbstractGrid; options...) =
         _nonzero_coefficients(compactsupport(ss, platform.basisplatform, param, platforms, supergrid(os_grid); os_grid=supergrid(os_grid), options...), q, mask(os_grid))
 
-    using GridArrays.ModCartesianIndicesBase: ModCartesianIndices
+    using GridArrays.PeriodicIndexing: PeriodicCartesianIndices
     function _nonzero_coefficients(b_support::CartesianIndices{N}, m::Union{Int,NTuple{N,Int}}, gridmask::BitArray{N}) where N
         gridsize = size(gridmask)
         dictsize = div.(gridsize,m)
@@ -182,7 +182,7 @@ module CompactFrameFunExtension
             bk_support = b_support .+ CartesianIndex(l)
             support_in = false
             support_out = false
-            for i in ModCartesianIndices(gridsize, first(bk_support), last(bk_support))
+            for i in PeriodicCartesianIndices(gridsize, first(bk_support), last(bk_support))
                 if gridmask[i]
                     support_in = true
                 else
@@ -219,7 +219,7 @@ module CompactFrameFunExtension
         for k in ix
             l = ((k isa Int ? k : k.I) .- 1).*m
             bk_support = b_support .+ CartesianIndex(l)
-            for i in ModCartesianIndices(gridsize, first(bk_support), last(bk_support))
+            for i in PeriodicCartesianIndices(gridsize, first(bk_support), last(bk_support))
                 A[i] = gridmask[i]
             end
         end
@@ -367,7 +367,7 @@ module CompactFrameFunExtension
         for ix in boundarygrid_subindices
             coefindices =  CartesianIndex(cld.((ix-last(dict2support)).I,m).+1):CartesianIndex(fld.((ix-first(dict2support)).I,m).+1)
             if length(coefindices) > 0
-                for l in ModCartesianIndices(size(dict2mask),first(coefindices),last(coefindices))
+                for l in PeriodicCartesianIndices(size(dict2mask),first(coefindices),last(coefindices))
                     dict2mask[l] = true
                 end
             end
@@ -424,7 +424,7 @@ module CompactFrameFunExtension
         for (i,k) in enumerate(indices)
             # support of element with index k
             bk_support = CartesianIndex(m.*(k.I.-1)) .+ b_support
-            bk_support_indices = ModCartesianIndices(gridsize, first(bk_support), last(bk_support))
+            bk_support_indices = PeriodicCartesianIndices(gridsize, first(bk_support), last(bk_support))
             colptrcol = 0
             for (j,l) in enumerate(bk_support_indices)
                 if gridmask[l] && B[j] != 0

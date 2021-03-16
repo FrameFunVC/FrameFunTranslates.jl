@@ -61,12 +61,12 @@ D = .4*disk() .+ SVector(.5,.5)
 #
 #         R = Matrix{Float64}(undef, length(dff), length(indices))
 #
-#         M = GridArrays.ModCartesianIndicesBase.ModCartesianIndices(size(basis(dict1)),first(dff), last(dff))
-#         M1 = GridArrays.ModCartesianIndicesBase.ModCartesianIndices(size(basis(dict1)),CartesianIndex(ntuple(k->1,Val(dimension(dict1)))),CartesianIndex(size(basis(dict1))))
+#         M = GridArrays.PeriodicCartesianIndicesBase.PeriodicCartesianIndices(size(basis(dict1)),first(dff), last(dff))
+#         M1 = GridArrays.PeriodicCartesianIndicesBase.PeriodicCartesianIndices(size(basis(dict1)),CartesianIndex(ntuple(k->1,Val(dimension(dict1)))),CartesianIndex(size(basis(dict1))))
 #
 #         for (i,k) in enumerate(indices)
 #             kdff = k .+ dff
-#             M = GridArrays.ModCartesianIndicesBase.ModCartesianIndices(size(basis(dict1)),first(kdff),last(kdff))
+#             M = GridArrays.PeriodicCartesianIndicesBase.PeriodicCartesianIndices(size(basis(dict1)),first(kdff),last(kdff))
 #             for (j,l) in enumerate(M)
 #                 R[j,i] = IG[L[M1[l]],L[k]]
 #             end
@@ -102,7 +102,7 @@ using SparseArrays, Test
 end
 
 using FrameFunTranslates.CompactAZ.CompactFrameFunExtension: sparseidentity, overlappingindices, sparseRAE, _sparseRAE
-using CompactTranslatesDict.CompactInfiniteVectors
+using CompactTranslatesDict
 @testset "SparseAZ: sparseAAZAmatrix" begin
     for (P,N,m) in zip((P1,P2,P3,P4), (N1,N2,N3,N4), (m1,m2,m3,m4))
         dict1 = dictionary(P,N)
@@ -151,7 +151,7 @@ using CompactTranslatesDict.CompactInfiniteVectors
     end
 end
 
-# spqr library can not handle this anymore :/ 
+# spqr library can not handle this anymore :/
 # @testset "SparseAZ: FrameFunInterface" begin
 #     err = [1e-2,1e-2,1e-6,1e-1]
 #     for (P,N,m,f,e) in zip((P1,P2,P3,P4), (N1,N2,N3,N4), (m1,m2,m3,m4), (f1,f2,f3,f4), err)

@@ -1,5 +1,6 @@
 
-using FrameFunTranslates, Test, DomainSets, FrameFun
+using FrameFunTranslates, Test, DomainSets, FrameFun, Statistics
+
 @testset "truncated size" begin
     Ns = 20:20:300
     ds = 1:4
@@ -105,13 +106,12 @@ using FrameFunTranslates, Test
         plunge = plungeoperator(P,N;L=4N); A = AZ_A(P,N;L=4N); Zt = AZ_Zt(P,N;L=4N);
         M = plunge*A;
         S = reducedAAZAoperator(P,N;solverstyle=ReducedAZStyle(),nz_tol=crop_tol)
-        @test all(size(M) .> size(S))
+        # @test all(size(M) .> size(S))
         @test norm(M)≈norm(S)
     end
 end
 
 
-using Test, FrameFunTranslates, Statistics
 @testset "errors, and timings" begin
 PLATFORMs = (EpsBSplinePlatform, BSplinePlatform, CDBSplinePlatform)
     Ns1 = [1<<k for k in 4:10]

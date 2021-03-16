@@ -1,7 +1,8 @@
 module BSplinePlatforms
 
-using FrameFun.Platforms, FrameFun.BasisFunctions, CompactTranslatesDict
-using FrameFun.BasisFunctions: AbstractMeasure
+using DomainIntegrals, BasisFunctions, CompactTranslatesDict
+
+using FrameFun.Platforms
 
 import FrameFun.Platforms: dictionary, SolverStyle, measure, SamplingStyle,
     dualdictionary, correctparamformat, unsafe_dictionary, platform
@@ -18,7 +19,7 @@ correctparamformat(::AbstractPeriodicEquispacedTranslatesPlatform, ::Int) = true
 
 abstract type AbstractEpsPeriodicEquispacedTranslatesPlatform{T,S} <: AbstractPeriodicEquispacedTranslatesPlatform{T,S} end
 
-function dualdictionary(platform::AbstractEpsPeriodicEquispacedTranslatesPlatform{T}, param, measure::AbstractMeasure;
+function dualdictionary(platform::AbstractEpsPeriodicEquispacedTranslatesPlatform{T}, param, measure::Measure;
         threshold=regularization_threshold(T), options...) where T
     dual = gramdual(dictionary(platform, param), measure;options...)
     op = BasisFunctions.operator(dual)
@@ -45,11 +46,15 @@ abstract type AbstractCDPeriodicEquispacedTranslatesPlatform{T,S}<: AbstractPeri
 SamplingStyle(::AbstractCDPeriodicEquispacedTranslatesPlatform) = OversamplingStyle()
 
 
-dualdictionary(platform::AbstractCDPeriodicEquispacedTranslatesPlatform, param, measure::AbstractMeasure; options...) =
+dualdictionary(platform::AbstractCDPeriodicEquispacedTranslatesPlatform, param, measure::Measure; options...) =
     error("No azdual_dict for `CDBSplinePlatform` and $(typeof(measure))")
 
-function dualdictionary(platform::AbstractCDPeriodicEquispacedTranslatesPlatform, param, measure::UniformDiracComb;
+function dualdictionary(platform::AbstractCDPeriodicEquispacedTranslatesPlatform, param, measure::DiscreteWeight;
         options...)
+    # temporary fix, we want a Uniform Dirac comb here
+    @assert isuniform(measure)
+    @assert points(measure) isa AbstractEquispacedGrid
+
     dict = dictionary(platform, param)
     g = points(measure)
     @assert support(dict) ≈ coverdomain(g)
@@ -347,9 +352,6 @@ true
 struct CDPETPlatform{T,S,DICT<:PeriodicEquispacedTranslates{T,S}} <: AbstractCDPETPlatorm{T,S,DICT}
     dict    :: DICT
 end
-
-# include("CompactPeriodicEquispacedTranslatesDuals.jl")
-using .CompactPeriodicEquispacedTranslatesDuals
 
 
 platform(dict::BSplineTranslatesBasis) =
