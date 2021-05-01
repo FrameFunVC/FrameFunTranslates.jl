@@ -68,8 +68,8 @@ using Test, FrameFunTranslates
 
     P = ExtensionFramePlatform(NdBSplinePlatform((1,3)),(0.0..0.5)^2)
     N = 10
-    @test all(operator.(elements(basis(azdual_dict(P,(N,N);L=(4N,4N))))) .≈
-        operator.(elements(basis(azdual_dict(P,(N,N),oversamplingfactor=4)))))
+    @test all(operator.(components(basis(azdual_dict(P,(N,N);L=(4N,4N))))) .≈
+        operator.(components(basis(azdual_dict(P,(N,N),oversamplingfactor=4)))))
 end
 
 using Test, FrameFunTranslates

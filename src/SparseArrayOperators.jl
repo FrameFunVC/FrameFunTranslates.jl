@@ -10,7 +10,7 @@ import SparseArrays: SparseMatrixCSC, sparse
 sparse(A::OperatorSum) = A.val1*sparse(A.op1)+A.val2*sparse(A.op2)
 
 function sparse(A::BlockOperator)
-    B = [sparse(Ai) for Ai in elements(A)]
+    B = [sparse(Ai) for Ai in components(A)]
     C = [vcat(B[:,i]...) for i in 1:size(B,2)]
     hcat(C...)
 end

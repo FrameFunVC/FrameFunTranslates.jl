@@ -10,9 +10,9 @@ using FrameFunTranslates, Test
 
     g1 = mixedgram(d1, d2)
     g2 = mixedgram(d1, d2, discretemeasure(sampling_grid(P,(10,10))))
-    all(isa.(elements(g1), CirculantOperator))
-    @test all(isa.(elements(g1), CirculantOperator))
-    @test all(isa.(elements(g2), CirculantOperator))
+    all(isa.(components(g1), CirculantOperator))
+    @test all(isa.(components(g1), CirculantOperator))
+    @test all(isa.(components(g2), CirculantOperator))
     @test g2 ≈ IdentityOperator(B)
 
     P = NdEpsBSplinePlatform((1,3))
@@ -45,7 +45,7 @@ using FrameFunTranslates, Test
     for P in (P1,P2,P3)
         @test SolverStyle(ProductSamplingStyle(InterpolationStyle(),InterpolationStyle()), approximationproblem(P, (10,10))) ==
             ProductSolverStyle(DualStyle(),DualStyle())
-        F = Fun(f, P, N; (elements(SamplingStyle(P))[1]==InterpolationStyle() ? tuple() : opts )...)
+        F = Fun(f, P, N; (components(SamplingStyle(P))[1]==InterpolationStyle() ? tuple() : opts )...)
         @test norm(F(x)-[f(xi...) for xi in x],Inf)  < .2
         @test abs(F(t...)-f(t...)) < 3e-5
     end

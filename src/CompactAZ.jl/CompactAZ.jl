@@ -14,7 +14,7 @@ module CompactFrameFunExtension
             $(ex)(ss::SamplingStyle, platform::ExtensionFramePlatform, param, args...; options...) =
                 $(efex)(ss, platform, param, platform.basisplatform, args...; options...)
             $(efex)(ss::SamplingStyle, platform::ExtensionFramePlatform, param, bplatform::ProductPlatform, args...; options...) =
-                $(efex)(ss, platform, param, elements(bplatform), args...; options...)
+                $(efex)(ss, platform, param, components(bplatform), args...; options...)
             $(efex)(ss::SamplingStyle, platform::ExtensionFramePlatform, param, bplatform::BasisPlatform, args...; options...) =
                 $(efex)(ss, platform, param, tuple(bplatform), args...; options...)
         end
@@ -142,13 +142,13 @@ module CompactFrameFunExtension
         compactinfinitevectors(ss, platform, param, os_grid; options...)
     end
     compactinfinitevectors(ss::DiscreteStyle, bplatform::ProductPlatform, param, os_grid::AbstractGrid; options...) =
-        compactinfinitevectors(ss, bplatform, param, elements(bplatform), os_grid; options...)
+        compactinfinitevectors(ss, bplatform, param, components(bplatform), os_grid; options...)
     compactinfinitevectors(ss::DiscreteStyle, bplatform::BasisPlatform, param, os_grid::AbstractGrid; options...) =
         compactinfinitevectors(ss, bplatform, param, tuple(bplatform), os_grid; options...)
     compactinfinitevectors(ss::DiscreteStyle, bplatform::Platform, param, platforms::Tuple{<:AbstractPeriodicEquispacedTranslatesPlatform}, os_grid::AbstractIntervalGrid; options...) =
         tuple(compactinfinitevector(dictionary(bplatform, param), os_grid; options...))
     compactinfinitevectors(ss::DiscreteStyle, bplatform::Platform, param, platforms::Tuple{Vararg{<:AbstractPeriodicEquispacedTranslatesPlatform}}, os_grid::ProductGrid; options...) =
-        map((x,y)->compactinfinitevector(x,y; options...), map(dictionary, platforms, param), elements(os_grid))
+        map((x,y)->compactinfinitevector(x,y; options...), map(dictionary, platforms, param), components(os_grid))
 
     export nonzero_coefficients
     @trial nonzero_coefficients
@@ -256,13 +256,13 @@ module CompactFrameFunExtension
         dict2 = basis(frame2)
         cvecs_dual =  dict2 isa Dictionary1d ?
             tuple(compactinfinitevector(dict2, supergrid(os_grid); verbose=verbose, options...)) :
-            map((x,y)->compactinfinitevector(x, y; verbose=verbose, options...), elements(dict2), elements(supergrid(os_grid)))
+            map((x,y)->compactinfinitevector(x, y; verbose=verbose, options...), components(dict2), components(supergrid(os_grid)))
         # and primal bases
         frame1 = dictionary(platform, param)
         dict1 = basis(frame1)
         cvecs =  dict1 isa Dictionary1d ?
             tuple(compactinfinitevector(dict1, supergrid(os_grid); verbose=verbose, options...)) :
-            map((x,y)->compactinfinitevector(x, y; verbose=verbose, options...), elements(dict1), elements(supergrid(os_grid)))
+            map((x,y)->compactinfinitevector(x, y; verbose=verbose, options...), components(dict1), components(supergrid(os_grid)))
         cvecs_supp = compactsupport(cvecs)
         # for l in WE_K
         # The primal basis has nonzero points for l in WE_K
@@ -332,7 +332,7 @@ module CompactFrameFunExtension
         dict2 = basis(frame2)
         cvecs_dual =  dict2 isa Dictionary1d ?
             tuple(compactinfinitevector(dict2, supergrid(os_grid); nz_tol=nz_tol, verbose=verbose, options...)) :
-            map((x,y)->compactinfinitevector(x, y; nz_tol=nz_tol, verbose=verbose, options...), elements(dict2), elements(supergrid(os_grid)))
+            map((x,y)->compactinfinitevector(x, y; nz_tol=nz_tol, verbose=verbose, options...), components(dict2), components(supergrid(os_grid)))
 
         N = size(dict2)
         q = div.(L, N)
