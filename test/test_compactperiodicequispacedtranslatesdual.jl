@@ -27,7 +27,7 @@ D = dualdictionary(P, N, μ)
 
 P = CDPETPlatform(BSplineTranslatesBasis(6,3,-1,1))
 d1 = dictionary(P,6)
-d2 = azdual_dict(P,6)
+d2 = azdual(P,6)
 g2 = mixedgram(d1, d2, discretemeasure(sampling_grid(P,6)))
 
 using InfiniteVectors

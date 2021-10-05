@@ -1,10 +1,12 @@
 module ReducedAZ
 
-using FrameFun.Platforms, BasisFunctions, FrameFun.ApproximationProblems, FrameFun.FrameFunInterface, LinearAlgebra, ..CompactFrameFunExtension
-import FrameFun.FrameFunInterface: solver
+using FrameFun, BasisFunctions, LinearAlgebra, ..CompactFrameFunExtension
+import FrameFun: solver
+
+using FrameFun: ApproximationProblem, default_threshold
 
 solver(style::ReducedAZStyle, ap::ApproximationProblem, A::DictionaryOperator; samplingstyle = SamplingStyle(ap), options...) =
-    solver(samplingstyle, style, ap, A, AZ_Zt(DictionaryOperatorStyle(), ap; (options)...); options...)
+    solver(samplingstyle, style, ap, A, AZ_Zt(ap; (options)...); options...)
 
 function solver(samplingstyle::OversamplingStyle, solverstyle::ReducedAZStyle, ap::ApproximationProblem, A::AbstractOperator, Zt::AbstractOperator;
         threshold=default_threshold(A), nz_tol=threshold, verbose=false, options...)

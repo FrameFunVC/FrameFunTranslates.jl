@@ -1,6 +1,8 @@
 
-using  Test
-using LowRankApprox
+using Test
+using LowRankApprox, LinearAlgebra, DomainSets, FrameFun
+
+using FrameFunTranslates
 
 @testset "AbstractBSplinePlatforms" begin
     include("test_abstractbsplineplatforms.jl")

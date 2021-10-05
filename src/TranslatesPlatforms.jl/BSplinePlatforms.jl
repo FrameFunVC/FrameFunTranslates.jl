@@ -2,18 +2,18 @@ module BSplinePlatforms
 
 using DomainIntegrals, BasisFunctions, CompactTranslatesDict
 
-using FrameFun.Platforms
+using FrameFun
 
-import FrameFun.Platforms: dictionary, SolverStyle, measure, SamplingStyle,
+import FrameFun: dictionary, SolverStyle, measure, SamplingStyle,
     dualdictionary, correctparamformat, unsafe_dictionary, platform
-import FrameFun.FrameFunInterface: correct_sampling_parameter, regularization_threshold, SamplingStrategy
+import FrameFun: correct_sampling_parameter, regularization_threshold
 
 
 abstract type AbstractPeriodicEquispacedTranslatesPlatform{T,S} <: BasisPlatform end
 
 SolverStyle(p::AbstractPeriodicEquispacedTranslatesPlatform, ::SamplingStyle) = DualStyle()
-correct_sampling_parameter(::SamplingStrategy, ::AbstractPeriodicEquispacedTranslatesPlatform, param, L; options...) = error()
-correct_sampling_parameter(::SamplingStrategy, ::AbstractPeriodicEquispacedTranslatesPlatform, param::Int, L::Int; options...) =
+correct_sampling_parameter(::AbstractPeriodicEquispacedTranslatesPlatform, param, L; options...) = error()
+correct_sampling_parameter(::AbstractPeriodicEquispacedTranslatesPlatform, param::Int, L::Int; options...) =
     (round(Int, L/param) * param)
 correctparamformat(::AbstractPeriodicEquispacedTranslatesPlatform, ::Int) = true
 
@@ -47,7 +47,7 @@ SamplingStyle(::AbstractCDPeriodicEquispacedTranslatesPlatform) = OversamplingSt
 
 
 dualdictionary(platform::AbstractCDPeriodicEquispacedTranslatesPlatform, param, measure::Measure; options...) =
-    error("No azdual_dict for `CDBSplinePlatform` and $(typeof(measure))")
+    error("No azdual for `CDBSplinePlatform` and $(typeof(measure))")
 
 function dualdictionary(platform::AbstractCDPeriodicEquispacedTranslatesPlatform, param, measure::DiscreteWeight;
         options...)
@@ -108,7 +108,7 @@ Periodic equispaced translates of B spline of degree 3
 
 
 
-julia> d2 = azdual_dict(P,10)
+julia> d2 = azdual(P,10)
 Dictionary M * P
 
 P   :   Periodic equispaced translates of B spline of degree 3
@@ -153,7 +153,7 @@ Periodic equispaced translates of B spline of degree 3
 
 
 
-julia> d2 = azdual_dict(P,1000;threshold=1e-4)
+julia> d2 = azdual(P,1000;threshold=1e-4)
 Dictionary M * P
 
 P   :   Periodic equispaced translates of B spline of degree 3
@@ -204,7 +204,7 @@ Periodic equispaced translates of B spline of degree 5
 
 
 
-julia> d2 = azdual_dict(P,20)
+julia> d2 = azdual(P,20)
 Equispaced translates of a discrete kernel dual to B-spline
     ↳ length = 20
     ↳ Float64 -> Float64
@@ -277,7 +277,7 @@ Periodic equispaced translates of a periodic kernel function
 
 
 
-julia> d2 = azdual_dict(P,6)
+julia> d2 = azdual(P,6)
 Dictionary M * P
 
 P   :   Periodic equispaced translates of a periodic kernel function
@@ -327,7 +327,7 @@ Periodic equispaced translates of a periodic kernel function
 
 
 
-julia> d2 = azdual_dict(P,6)
+julia> d2 = azdual(P,6)
 Equispaced translates of a discrete kernel dual
     ↳ Periodic equispaced translates of a periodic kernel function
       ↳ length = 6

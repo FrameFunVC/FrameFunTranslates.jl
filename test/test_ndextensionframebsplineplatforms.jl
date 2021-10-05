@@ -6,7 +6,7 @@ using FrameFunTranslates, Test, LinearAlgebra, LowRankApprox
         P = ExtensionFramePlatform(PLATFORM((d1,d2)), (0.0..0.5)^2); N = (N1,N2)
         plunge = plungeoperator(P,N); A = AZ_A(P,N); Zt = AZ_Zt(P,N)
         S = reducedAZ_AAZAreductionsolver(P,N;solverstyle=ReducedAZStyle(),lraoptions=LRAOptions(atol=1e-14))
-        b = samplingoperator(P,N)*f
+        b = sampling_operator(P,N)*f
         x1 = S*plunge*b
         x2 = Zt*(b-A*x1)
         @test norm(A*(x1+x2)-b) < 5e-3
@@ -22,7 +22,7 @@ using FrameFunTranslates, Test, LinearAlgebra, LowRankApprox
     for d in 1:5, PLATFORM in (NdEpsBSplinePlatform, NdBSplinePlatform, NdCDBSplinePlatform)
         P = ExtensionFramePlatform(PLATFORM((d,d)), (0.0..0.5)^2); N = (30,30)
         F = Fun(f, P, N;solverstyle=ReducedAZStyle(),lraoptions=LRAOptions(atol=1e-14))
-        b = samplingoperator(P,N)*f
+        b = sampling_operator(P,N)*f
         A = AZ_A(P,N)
         @test norm(A*coefficients(F)-b) < 5e-3
     end

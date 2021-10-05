@@ -16,7 +16,7 @@ using FrameFunTranslates.CompactAZ.CompactFrameFunExtension: nonzero_rows, nonze
     end
 
     # 1D nonzero_rows
-    P = FrameFun.ExtensionFramePlatform(CDBSplinePlatform(), 0.0..0.5)
+    P = ExtensionFramePlatform(CDBSplinePlatform(), 0.0..0.5)
     N = 100
     M = plungeoperator(P,N;L=4N)*AZ_A(P,N;L=4N);size(M)
     @test findall(nonzero_rows(Matrix(M),nz_tol=1e-10))[:] ==

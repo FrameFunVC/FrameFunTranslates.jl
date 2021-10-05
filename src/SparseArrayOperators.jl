@@ -1,7 +1,7 @@
 module SparseArrayOperators
 
-using FrameFun.BasisFunctions
-using FrameFun.BasisFunctions: VerticalBandedMatrix, HorizontalBandedMatrix, ArrayOperator,
+using FrameFun, BasisFunctions
+using BasisFunctions: VerticalBandedMatrix, HorizontalBandedMatrix, ArrayOperator,
         IndexMatrix, ExtensionIndexMatrix, RestrictionIndexMatrix, OperatorSum
 using SparseArrays, LinearAlgebra
 

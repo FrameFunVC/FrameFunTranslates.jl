@@ -3,10 +3,32 @@ module CompactAZ
 using Reexport
 
 module CompactFrameFunExtension
-    using Reexport, FrameFun, BasisFunctions, FrameFun.ExtensionFramePlatforms, FrameFun.ApproximationProblems, InfiniteVectors, SparseArrays, ....TranslatesPlatforms
-    using FrameFun.FrameFunInterface: @trial, @aptoplatform
+    using Reexport, FrameFun, BasisFunctions, InfiniteVectors, SparseArrays, ....TranslatesPlatforms
+    using FrameFun: @ap_interface, @ap_sampling_property,
+        ap_process_options, ap_hasproperty, cache, cache!
+    using FrameFun: ApproximationProblem, default_threshold
     using BasisFunctions: OuterProductArray
     using ....SPQR_Solvers
+
+    # this macro does some of what the @trial macro in FrameFun used to do, which
+    # is not in the the ap_interface macro
+    # TODO: clean up so that this macro is no longer needed
+    macro deprecated_interface(ex)
+        def = Meta.parse("default_"*string(ex))
+        ret = quote
+            $(ex)(ss::SamplingStyle, ap::ApproximationProblem, args...; options...) =
+                $(ex)(ss, platform(ap), platformparameter(ap), args...; options...)
+            $(ex)(ss::SamplingStyle, platform::Platform, param, args...; dict = dictionary(platform, param), options...) =
+                $(ex)(ss, dict, args...; options...)
+            $(ex)(ss::SamplingStyle, platform::FrameFun.ParametrizedPlatform, param, args...; options...) =
+                $(ex)(ss, platform.platform, platform.path[param], args...; options...)
+            $(ex)(ss::SamplingStyle, dict::Dictionary, args...; options...) =
+                $(def)(ss, dict, args...; options...)
+        end
+        esc(ret)
+    end
+
+
 
     macro efplatformtobasisplatforms(ex)
         efex = Meta.parse("ef_"*string(ex))
@@ -41,7 +63,9 @@ module CompactFrameFunExtension
 
 
     export reducedAAZAoperator
-    @trial reducedAAZAoperator
+    @ap_interface reducedAAZAoperator
+    @deprecated_interface reducedAAZAoperator
+    @ap_sampling_property reducedAAZAoperator
     @efplatformtobasisplatforms reducedAAZAoperator
     reducedAAZAoperator(samplingstyle::SamplingStyle, ap::ApproximationProblem; L=samplingparameter(ap), options...) =
         reducedAAZAoperator(samplingstyle, ap, L; options...)
@@ -84,7 +108,9 @@ module CompactFrameFunExtension
     end
 
     export reducedAZ_AAZAreductionsolver
-    @trial reducedAZ_AAZAreductionsolver
+    @ap_interface reducedAZ_AAZAreductionsolver
+    @deprecated_interface reducedAZ_AAZAreductionsolver
+    @ap_sampling_property reducedAZ_AAZAreductionsolver
     @efplatformtobasisplatforms reducedAZ_AAZAreductionsolver
     function reducedAZ_AAZAreductionsolver(ss::SamplingStyle, ap::ApproximationProblem; L=samplingparameter(ap), REG=pQR_solver, options...)
         if haskey(options, :directsolver)
@@ -115,9 +141,10 @@ module CompactFrameFunExtension
     using GridArrays, CompactTranslatesDict
     using ....TranslatesPlatforms.BSplinePlatforms: AbstractPeriodicEquispacedTranslatesPlatform
     export compactsupport
-    @trial compactsupport
+    @ap_interface compactsupport
+    @ap_sampling_property compactsupport
     compactsupport(samplingstyle::SamplingStyle, ap::ApproximationProblem; options...) =
-        compactsupport(samplingstyle, platform(ap), parameter(ap), samplingparameter(ap); options...)
+        compactsupport(samplingstyle, platform(ap), platformparameter(ap), samplingparameter(ap); options...)
 
     function compactsupport(ss::DiscreteStyle, platform::Platform, param, L; options...)
         os_grid = haskey(options, :os_grid) ? options[:os_grid] : sampling_grid(samplingstyle, platform, param, L; options...)
@@ -134,9 +161,10 @@ module CompactFrameFunExtension
 
 
     export compactinfinitevectors
-    @trial compactinfinitevectors
+    @ap_interface compactinfinitevectors
+    @ap_sampling_property compactinfinitevectors
     compactinfinitevectors(samplingstyle::SamplingStyle, ap::ApproximationProblem; options...) =
-        compactinfinitevectors(samplingstyle, platform(ap), parameter(ap), samplingparameter(ap); options...)
+        compactinfinitevectors(samplingstyle, platform(ap), platformparameter(ap), samplingparameter(ap); options...)
     function compactinfinitevectors(ss::DiscreteStyle, platform::Platform, param, L; options...)
         os_grid = haskey(options, :os_grid) ? options[:os_grid] : sampling_grid(samplingstyle, platform, param, L; options...)
         compactinfinitevectors(ss, platform, param, os_grid; options...)
@@ -151,10 +179,12 @@ module CompactFrameFunExtension
         map((x,y)->compactinfinitevector(x,y; options...), map(dictionary, platforms, param), components(os_grid))
 
     export nonzero_coefficients
-    @trial nonzero_coefficients
+    @ap_interface nonzero_coefficients
+    @deprecated_interface nonzero_coefficients
+    @ap_sampling_property nonzero_coefficients
     @efplatformtobasisplatforms nonzero_coefficients
     nonzero_coefficients(samplingstyle::SamplingStyle, ap::ApproximationProblem; options...) =
-        nonzero_coefficients(samplingstyle, platform(ap), parameter(ap), samplingparameter(ap); options...)
+        nonzero_coefficients(samplingstyle, platform(ap), platformparameter(ap), samplingparameter(ap); options...)
 
     function ef_nonzero_coefficients(samplingstyle::SamplingStyle, platform::Platform, param, platforms::Tuple, L; options...)
         os_grid = haskey(options, :os_grid) ? options[:os_grid] : sampling_grid(samplingstyle, platform, param, L; options...)
@@ -200,10 +230,12 @@ module CompactFrameFunExtension
     include("nonzero_rows.jl")
 
     export nonzero_pointsindices
-    @trial nonzero_pointsindices
+    @ap_interface nonzero_pointsindices
+    @deprecated_interface nonzero_pointsindices
+    @ap_sampling_property nonzero_pointsindices
     @efplatformtobasisplatforms nonzero_pointsindices
     nonzero_pointsindices(samplingstyle::SamplingStyle, ap::ApproximationProblem, ix, relative::Bool; options...) =
-        nonzero_pointsindices(samplingstyle, platform(ap), parameter(ap), samplingparameter(ap), ix, relative; options...)
+        nonzero_pointsindices(samplingstyle, platform(ap), platformparameter(ap), samplingparameter(ap), ix, relative; options...)
 
     function ef_nonzero_pointsindices(samplingstyle::SamplingStyle, platform::Platform, param, platforms::Tuple, L, ix, relative::Bool; options...)
         os_grid = haskey(options, :os_grid) ? options[:os_grid] : sampling_grid(samplingstyle, platform, param, L; options...)
@@ -234,7 +266,9 @@ module CompactFrameFunExtension
     const AAZA_nonzero_column_indexset = nonzero_coefficients
 
     export AAZA_nonzero_row_indexset
-    @trial AAZA_nonzero_row_indexset
+    @ap_interface AAZA_nonzero_row_indexset
+    @deprecated_interface AAZA_nonzero_row_indexset
+    @ap_sampling_property AAZA_nonzero_row_indexset
     @efplatformtobasisplatforms AAZA_nonzero_row_indexset
     AAZA_nonzero_row_indexset(ss::SamplingStyle, ap::ApproximationProblem; L=samplingparameter(ap), options...) =
         AAZA_nonzero_row_indexset(ss, ap, L; options...)
@@ -252,7 +286,7 @@ module CompactFrameFunExtension
         # WE_I1 is the union of two sets. The first one:
         WE_I1a = WE_K
         # The second one checks the overlapping supports of the dual
-        frame2 = azdual_dict(platform, param; verbose=verbose, samplingstyle=samplingstyle, L=L, options...)
+        frame2 = azdual(platform, param; verbose=verbose, samplingstyle=samplingstyle, L=L, options...)
         dict2 = basis(frame2)
         cvecs_dual =  dict2 isa Dictionary1d ?
             tuple(compactinfinitevector(dict2, supergrid(os_grid); verbose=verbose, options...)) :
@@ -283,7 +317,9 @@ module CompactFrameFunExtension
     end
 
     export sparseAZ_AAZAreductionsolver
-    @trial sparseAZ_AAZAreductionsolver
+    @ap_interface sparseAZ_AAZAreductionsolver
+    @deprecated_interface sparseAZ_AAZAreductionsolver
+    @ap_sampling_property sparseAZ_AAZAreductionsolver
     @efplatformtobasisplatforms sparseAZ_AAZAreductionsolver
     function sparseAZ_AAZAreductionsolver(ss::SamplingStyle, ap::ApproximationProblem; L=samplingparameter(ap), REG=SPQR_solver, options...)
         if haskey(options, :directsolver)
@@ -311,7 +347,9 @@ module CompactFrameFunExtension
     end
 
     export sparse_reducedAAZAoperator
-    @trial sparse_reducedAAZAoperator
+    @ap_interface sparse_reducedAAZAoperator
+    @deprecated_interface sparse_reducedAAZAoperator
+    @ap_sampling_property sparse_reducedAAZAoperator
     @efplatformtobasisplatforms sparse_reducedAAZAoperator
     function sparse_reducedAAZAoperator(ss::SamplingStyle, ap::ApproximationProblem; L=samplingparameter(ap), options...)
         if haskey(options, :directsolver)
@@ -328,7 +366,7 @@ module CompactFrameFunExtension
         cvecs = haskey(options, :cvecs) ? options[:cvecs] : compactinfinitevectors(samplingstyle, platform.basisplatform, param, L; verbose=verbose, nz_tol=nz_tol, options..., os_grid=supergrid(os_grid))
         csupps = compactsupport(cvecs)
         verbose && @info "SparseAZStyle: create sparse A-AZ^*A"
-        frame2 = azdual_dict(platform, param; options..., verbose=verbose, nz_tol=nz_tol, samplingstyle=samplingstyle, L=L)
+        frame2 = azdual(platform, param; options..., verbose=verbose, nz_tol=nz_tol, samplingstyle=samplingstyle, L=L)
         dict2 = basis(frame2)
         cvecs_dual =  dict2 isa Dictionary1d ?
             tuple(compactinfinitevector(dict2, supergrid(os_grid); nz_tol=nz_tol, verbose=verbose, options...)) :
@@ -375,9 +413,13 @@ module CompactFrameFunExtension
         ix2 = findall(dict2mask)
     end
 
-    @trial sparseRAE
+    @ap_interface sparseRAE
+    @deprecated_interface sparseRAE
+    @ap_sampling_property sparseRAE
     @efplatformtobasisplatforms sparseRAE
-    sparseRAE(platform::Platform, param, ix; options...) = sparseRAE(approximationproblem(platform, param), ix; options...)
+    # TODO: this is hacky
+    sparseRAE(platform::Platform, param, ix; options...) = sparseRAE(approximationproblem(platform, param; options...), ix; options...)
+    sparseRAE(ap::ApproximationProblem, ix; options...) = sparseRAE(SamplingStyle(ap), ap, ix; options...)
     sparseRAE(samplingstyle::SamplingStyle, ap::ApproximationProblem, ix; L=samplingparameter(ap), options...) =
         sparseRAE(samplingstyle, ap, L, ix; options...)
     function ef_sparseRAE(samplingstyle::DiscreteStyle, platform::Platform, param, platforms::Tuple, L, ix; options...)
@@ -519,7 +561,9 @@ module CompactFrameFunExtension
     end
 
     export true_nonzero_reducedAAZAoperator
-    @trial true_nonzero_reducedAAZAoperator
+    @ap_interface true_nonzero_reducedAAZAoperator
+    @deprecated_interface true_nonzero_reducedAAZAoperator
+    @ap_sampling_property true_nonzero_reducedAAZAoperator
     @efplatformtobasisplatforms true_nonzero_reducedAAZAoperator
     true_nonzero_reducedAAZAoperator(samplingstyle::SamplingStyle, ap::ApproximationProblem; L=samplingparameter(ap), options...) =
         true_nonzero_reducedAAZAoperator(samplingstyle, ap, L; options...)

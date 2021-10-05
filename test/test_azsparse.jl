@@ -120,7 +120,7 @@ using CompactTranslatesDict
         ix1 = nonzero_coefficients(P,N;L=m.*N)
         A = sparseRAE(P,N, ix1;L=m.*N)
 
-        dual_cvecs = map(compactinfinitevector,components(basis(azdual_dict(P,N;L=m.*N))), components(γ))
+        dual_cvecs = map(compactinfinitevector,components(basis(azdual(P,N;L=m.*N))), components(γ))
         ix2 = overlappingindices(dual_cvecs, g, findall(nonzero_rows(A)), N, m.*N)
 
         @test sort(ix2) == sort(findall(reshape(sum(abs.(Z_ref[findall(nonzero_rows(A)),:]),dims = 1)[:] .> 0,size(dict2))    ))

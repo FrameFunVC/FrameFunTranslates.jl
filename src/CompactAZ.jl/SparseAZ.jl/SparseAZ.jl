@@ -1,11 +1,13 @@
 module SparseAZ
 
-using FrameFun.Platforms
-using FrameFun.BasisFunctions, FrameFun.ApproximationProblems, FrameFun.FrameFunInterface, LinearAlgebra, ..CompactFrameFunExtension
-import FrameFun.FrameFunInterface: solver
+using FrameFun, BasisFunctions
+using LinearAlgebra, ..CompactFrameFunExtension
+import FrameFun: solver
+
+using FrameFun: ApproximationProblem, default_threshold
 
 solver(style::SparseAZStyle, ap::ApproximationProblem, A::DictionaryOperator; samplingstyle=SamplingStyle(ap), options...) =
-    solver(samplingstyle, style, ap, A, AZ_Zt(DictionaryOperatorStyle(), ap; (options)...); options...)
+    solver(samplingstyle, style, ap, A, AZ_Zt(ap; options)...; options...)
 
 function solver(samplingstyle::SamplingStyle, solverstyle::SparseAZStyle, ap::ApproximationProblem, A::AbstractOperator, Zt::AbstractOperator;
         threshold=default_threshold(A), nz_tol=threshold, verbose=false, options...)
